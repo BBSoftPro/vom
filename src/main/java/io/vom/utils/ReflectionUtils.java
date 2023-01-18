@@ -7,12 +7,11 @@ import io.vom.annotations.actions.GetText;
 import io.vom.annotations.actions.SetText;
 import io.vom.annotations.repositories.Name;
 import io.vom.core.Context;
-import io.vom.core.Repository;
-import io.vom.core.Selector;
 import io.vom.core.View;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.implementation.InvocationHandlerAdapter;
 import net.bytebuddy.matcher.ElementMatchers;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
@@ -20,19 +19,19 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
-public class Reflection {
+public class ReflectionUtils {
 
     private static final Map<Class<? extends Annotation>, InvocationHandler> actionHandler = new HashMap<>();
 
     static {
-        actionHandler.put(GetText.class, Reflection::invokeGetter);
-        actionHandler.put(SetText.class, Reflection::invokeSetter);
-        actionHandler.put(Clear.class, Reflection::invokeClearer);
-        actionHandler.put(Click.class, Reflection::invokeClicker);
+        actionHandler.put(GetText.class, ReflectionUtils::invokeGetter);
+        actionHandler.put(SetText.class, ReflectionUtils::invokeSetter);
+        actionHandler.put(Clear.class, ReflectionUtils::invokeClearer);
+        actionHandler.put(Click.class, ReflectionUtils::invokeClicker);
     }
 
 
-    public static <T extends View<T>> T createPageObject(Context context, Class<T> pClass) throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
+    public static <T extends View<T>> T createPageObject(@NonNull Context context,@NonNull Class<T> pClass) throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
         var map = new HashMap<Method, InvocationHandler>();
 
         Arrays.stream(pClass.getMethods()).forEach(method -> {
@@ -47,11 +46,11 @@ public class Reflection {
         return obj;
     }
 
-    private static void injectFields(Context context, View<?> obj) {
+    private static void injectFields(@NonNull Context context,@NonNull View<?> obj) {
         Class<?> klass = obj.getClass();
         while (klass != null) {
             var className = klass.getSimpleName();
-            var r = Repository.findRepository(context, klass);
+            var selectors = SelectorUtils.findSelectors(context, klass);
             Arrays.stream(klass.getDeclaredFields())
                     .peek(field -> field.setAccessible(true))
                     .filter(field -> {
@@ -66,9 +65,12 @@ public class Reflection {
                                 .map(Name::value)
                                 .orElse(field.getName());
 
-                        var found = r.stream().filter(selector -> selector.getName().equals(name))
-                                .findAny()
-                                .orElseThrow(() -> new SelectorNotFoundException("Selector named: '" + name + "' was not found, Selector holder class is '"+className+"'"));
+                        var found = selectors.get(name);
+
+                        if (found == null){
+                            throw new SelectorNotFoundException("Selector named: '" + name + "' was not found, Selector holder class is '"+className+"'");
+                        }
+
                         try {
                             field.set(obj, found);
                         } catch (IllegalAccessException e) {
@@ -80,7 +82,7 @@ public class Reflection {
     }
 
 
-    private static InvocationHandler findHandler(Method method) {
+    private static InvocationHandler findHandler(@NonNull Method method) {
         return Arrays.stream(method.getDeclaredAnnotations())
                 .map((a) -> actionHandler.get(a.annotationType()))
                 .filter(Objects::nonNull)
@@ -105,7 +107,7 @@ public class Reflection {
     private static Object invokeClearer(Object self, Method method, Object[] objects) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         SetText annotation = method.getDeclaredAnnotation(SetText.class);
         var view = (View<?>) self;
-        Selector selector = Repository.findSelector(view.getContext(), view, method);
+        Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
         view.findElement(selector).clear();
 
         return getReturn(self, method, annotation);
@@ -114,7 +116,7 @@ public class Reflection {
     private static Object invokeSetter(Object self, Method method, Object[] objects) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         SetText annotation = method.getDeclaredAnnotation(SetText.class);
         var view = (View<?>) self;
-        Selector selector = Repository.findSelector(view.getContext(), view, method);
+        Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
 
         var text = Objects.requireNonNull(objects[0], method.getName() + "argument is null").toString();
         view.findElement(selector).setText(text);
@@ -145,7 +147,7 @@ public class Reflection {
     @SuppressWarnings({"unchecked", "rawtypes", "SuspiciousInvocationHandlerImplementation"})
     private static Object invokeClicker(Object self, Method method, Object[] objects) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         var view = (View<?>) self;
-        Selector selector = Repository.findSelector(view.getContext(), view, method);
+        Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
         view.findElement(selector).click();
         Class<? extends View> returnClass = (Class<? extends View>) method.getReturnType();
 
@@ -154,7 +156,7 @@ public class Reflection {
 
     private static Object invokeGetter(Object self, Method method, Object[] objects) {
         var view = (View<?>) self;
-        Selector selector = Repository.findSelector(view.getContext(), view, method);
+        Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
         if (method.getReturnType().isAssignableFrom(String.class)) {
             //noinspection SuspiciousInvocationHandlerImplementation
             return view.findElement(selector).getText();

@@ -2,13 +2,17 @@ package io.vom.appium;
 
 import io.vom.core.Driver;
 import io.vom.core.Element;
-import io.vom.core.Selector;
+import io.vom.exceptions.ElementNotFoundException;
 import io.vom.utils.Point;
+import io.vom.utils.Properties;
+import io.vom.utils.Selector;
 import io.vom.utils.Size;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import org.openqa.selenium.OutputType;
 import org.openqa.selenium.WebElement;
 
+import java.time.Duration;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class AppiumElementImpl implements Element {
     private final AppiumDriverImpl driver;
@@ -80,20 +84,77 @@ public class AppiumElementImpl implements Element {
         return webElement.getAttribute(attr);
     }
 
+    @Override
+    public void drag(Point point) {
+        var duration = Integer.parseInt(Properties.getInstance().getProperty("drag_duration_in_millis", "100"));
+
+        drag(point, Duration.ofMillis(duration));
+    }
+
+    @Override
+    public Point getCenterPoint() {
+        var size = getSize();
+        var point = getPoint();
+
+        int x = size.getWidth() / 2 + point.getX();
+        int y = size.getHeight() / 2 + point.getY();
+
+        return new Point(x, y);
+    }
+
+    @Override
+    public byte[] takeScreenshot() {
+        return webElement.getScreenshotAs(OutputType.BYTES);
+    }
+
+    @Override
+    public List<Integer> getCenterRGBColor() {
+        return getDriver().getCenterRGBColor(getCenterPoint());
+    }
+
+    @Override
+    public void drag(@NonNull Point point, @NonNull Duration duration) {
+        var size = getSize();
+        var currentPoint = this.getPoint();
+        var centerPoint = new Point(currentPoint.getX() + size.getWidth() / 2, currentPoint.getY() + size.getHeight() / 2);
+
+        driver.slipFinger(centerPoint, point, duration);
+    }
+
     public WebElement getAppiumElement() {
         return webElement;
     }
 
     @Override
-    public Element findElement(Selector selector) {
-        return new AppiumElementImpl(driver, webElement.findElement(AppiumDriverImpl.bySelector(selector)));
+    public Element findElement(@NonNull Selector selector) {
+        return AppiumDriverImpl.findElement(driver, webElement, selector);
     }
 
     @Override
-    public List<Element> findElements(Selector selector) {
-        return webElement.findElements(AppiumDriverImpl.bySelector(selector))
-                .stream()
-                .map((e) -> new AppiumElementImpl(driver, e))
-                .collect(Collectors.toList());
+    public Element findElement(Selector selector, Duration waitUntil) {
+        return AppiumDriverImpl.findElement(driver, webElement, selector, waitUntil);
+    }
+
+    @Override
+    public Element findNullableElement(@NonNull Selector selector) {
+        try {
+            return findElement(selector, Duration.ZERO);
+        } catch (ElementNotFoundException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public Element findNullableElement(Selector selector, Duration duration) {
+        try {
+            return findElement(selector, duration);
+        } catch (ElementNotFoundException e) {
+            return null;
+        }
+    }
+
+    @Override
+    public List<Element> findElements(@NonNull Selector selector) {
+        return AppiumDriverImpl.findElements(driver, webElement, selector);
     }
 }

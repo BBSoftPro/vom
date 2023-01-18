@@ -3,7 +3,7 @@ package io.vom.utils;
 import java.io.File;
 import java.util.Objects;
 
-public class FileUtil {
+public class FileUtils {
     public static String getFullPath(String path){
         Objects.requireNonNull(path);
         if (path.startsWith("/")){

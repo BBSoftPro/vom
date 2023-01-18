@@ -1,47 +1,70 @@
 package io.vom.core;
 
-import io.vom.utils.Reflection;
+import io.vom.utils.ContextBuilder;
+import io.vom.utils.ReflectionUtils;
+import io.vom.utils.Selector;
+import io.vom.utils.SelectorUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Objects;
+import java.util.Map;
 
 public class Context {
+
+    LoadSelectorListener loadSelectorListener;
     protected Driver driver;
+
+    private Map<String, Selector> commonSelectors;
+
+    public Context(Driver driver){
+        this.driver = driver;
+        this.driver.prepare(this);
+    }
+
+    public void setSelectorListener(LoadSelectorListener loadSelectorListener){
+        this.loadSelectorListener = loadSelectorListener;
+    }
+
+    public LoadSelectorListener getSelectorListener(){
+        return loadSelectorListener;
+    }
+
+    public Selector getCommonSelector(String name) {
+        if (commonSelectors == null) {
+            commonSelectors = SelectorUtils.loadCommonSelectors(this);
+        }
+
+        return commonSelectors.get(name);
+    }
 
     public Driver getDriver() {
         return driver;
     }
 
-    public <T extends View<T>> T loadView(Class<T> viewClass) {
+    public <T extends View<T>> T loadView(@NonNull Class<T> viewClass) {
         try {
-            return Reflection.createPageObject(this, viewClass);
+            return ReflectionUtils.createPageObject(this, viewClass);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-
-    public static ContextBuilder getBuilder() {
-        return new ContextBuilder();
+    public static SimpleContextBuilder getBuilder() {
+        return new SimpleContextBuilder();
     }
 
-    public static class ContextBuilder {
-
-        private final Context context = new Context();
-
+    public static class SimpleContextBuilder implements ContextBuilder<SimpleContextBuilder, Context> {
         private Driver driver;
 
-        public ContextBuilder setDriver(Driver driver) {
+        @Override
+        public SimpleContextBuilder setDriver(@NonNull Driver driver) {
             this.driver = driver;
 
             return this;
         }
 
+        @Override
         public Context build() {
-            Objects.requireNonNull(driver, "Driver is null, you should set Driver to start project");
-            context.driver = driver;
-
-            return context;
+            return new Context(driver);
         }
     }
 }

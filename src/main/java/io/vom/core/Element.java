@@ -3,6 +3,9 @@ package io.vom.core;
 import io.vom.utils.Point;
 import io.vom.utils.Size;
 
+import java.time.Duration;
+import java.util.List;
+
 public interface Element extends Searchable {
 
     Driver getDriver();
@@ -24,4 +27,14 @@ public interface Element extends Searchable {
     boolean isFocused();
 
     String getAttribute(String attr);
+
+    void drag(Point point, Duration duration);
+
+    void drag(Point point);
+
+    Point getCenterPoint();
+
+    byte[] takeScreenshot();
+
+    List<Integer> getCenterRGBColor();
 }

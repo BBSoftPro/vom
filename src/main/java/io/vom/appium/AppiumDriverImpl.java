@@ -2,40 +2,64 @@ package io.vom.appium;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.sun.source.tree.TryTree;
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
+import io.appium.java_client.android.AndroidDriver;
+import io.appium.java_client.ios.IOSDriver;
+import io.vom.core.Context;
 import io.vom.core.Driver;
 import io.vom.core.Element;
-import io.vom.core.Selector;
+import io.vom.exceptions.ElementNotFoundException;
+import io.vom.exceptions.InfinityLoopException;
 import io.vom.exceptions.PlatformNotFoundException;
-import io.vom.utils.FileUtil;
 import io.vom.utils.Point;
 import io.vom.utils.Properties;
-import io.vom.utils.Size;
-import org.openqa.selenium.By;
-import org.openqa.selenium.Capabilities;
+import io.vom.utils.*;
+import org.apache.commons.lang.text.StrSubstitutor;
+import org.openqa.selenium.NoSuchElementException;
+import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.PointerInput;
 import org.openqa.selenium.interactions.Sequence;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.time.Duration;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static io.vom.utils.Properties.DEFAULT_SCROLL_DURATION;
+import static io.vom.utils.Properties.DEFAULT_SCROLL_LENGTH;
+
 
 public class AppiumDriverImpl implements Driver {
 
     AppiumDriver appiumDriver;
+    private Context context;
 
-    private final Duration scrollDuration = Duration.ofMillis(Integer.parseInt(Properties.getInstance().getProperty("scroll_default_duration_in_millis", "100")));
-    private final int scrollLength = Integer.parseInt(Properties.getInstance().getProperty("scroll_length", "300"));
+    private Selector scrollContainer;
+
+    @Override
+    public void prepare(Context context) {
+        this.context = context;
+
+        scrollContainer = Objects.requireNonNull(context.getCommonSelector("scroll_container")
+                , "scroll container selector was not found in neither resource folder nor repository");
+
+    }
 
     public AppiumDriverImpl(URL remoteAddress, Capabilities desiredCapabilities) {
         appiumDriver = new AppiumDriver(remoteAddress, desiredCapabilities);
+    }
+
+    public AppiumDriver getAppiumDriver() {
+        return appiumDriver;
     }
 
     public AppiumDriverImpl() {
@@ -43,7 +67,7 @@ public class AppiumDriverImpl implements Driver {
 
         try {
             var url = new URL(prop.getProperty("appium_url"));
-            var reader = new FileReader(FileUtil.getFullPath(prop.getProperty("appium_caps_json_file")));
+            var reader = new FileReader(FileUtils.getFullPath(prop.getProperty("appium_caps_json_file")));
 
             Gson gson = new Gson();
             Type type = new TypeToken<List<Map<String, Object>>>() {
@@ -59,23 +83,77 @@ public class AppiumDriverImpl implements Driver {
                     .orElseThrow(() -> new PlatformNotFoundException("Platform: '" + platform + "' was not found on appium json file"));
 
             var caps = new DesiredCapabilities(map);
-            appiumDriver = new AppiumDriver(url, caps);
+            if (platform.equals("android")) {
+                appiumDriver = new AndroidDriver(url, caps);
+            } else if (platform.equals("ios")) {
+                appiumDriver = new IOSDriver(url, caps);
+            } else {
+                appiumDriver = new AppiumDriver(url, caps);
+            }
+            Duration implicitlyDuration = Duration.ofSeconds(Long.parseLong(prop.getProperty("implicitly_wait_time_in_seconds", "0")));
+            appiumDriver.manage().timeouts().implicitlyWait(implicitlyDuration);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
+    public static Element findElement(AppiumDriverImpl driver, SearchContext searchContext, Selector selector) {
+        Duration waitUntil = Duration.ofSeconds(Integer.parseInt(Properties.getInstance().getProperty("explicitly_wait_time_in_seconds", "0")));
+        return findElement(driver, searchContext, selector, waitUntil);
+    }
+
+    public static Element findElement(AppiumDriverImpl driver, SearchContext searchContext, Selector selector, Duration waitUntil) {
+        return DriverUtil.waitUntil(waitUntil, () -> {
+            try {
+                var ae = searchContext.findElement(bySelector(selector));
+
+                return new AppiumElementImpl(driver, ae);
+            } catch (NoSuchElementException e) {
+                var exception = new ElementNotFoundException("Element was not found by this selector:" +
+                        " name='" + selector.getName() + "' type='" + selector.getType() + "' value='" + selector.getValue() + "'");
+                exception.addSuppressed(e);
+
+                throw exception;
+            }
+        });
+    }
+
+
+    public static List<Element> findElements(AppiumDriverImpl driver, SearchContext searchContext, Selector selector) {
+        return searchContext.findElements(bySelector(selector))
+                .stream()
+                .map((e) -> new AppiumElementImpl(driver, e))
+                .collect(Collectors.toList());
+    }
+
     @Override
     public Element findElement(Selector selector) {
-        return new AppiumElementImpl(this, appiumDriver.findElement(bySelector(selector)));
+        return findElement(this, appiumDriver, selector);
+    }
+
+
+    @Override
+    public Element findElement(Selector selector, Duration waitUntil) {
+        return findElement(this, appiumDriver, selector, waitUntil);
+    }
+
+    @Override
+    public Element findNullableElement(Selector selector) {
+        return findNullableElement(selector, Duration.ZERO);
+    }
+
+    @Override
+    public Element findNullableElement(Selector selector, Duration duration) {
+        try {
+            return findElement(selector, duration);
+        } catch (ElementNotFoundException e) {
+            return null;
+        }
     }
 
     @Override
     public List<Element> findElements(Selector selector) {
-        return appiumDriver.findElements(bySelector(selector))
-                .stream()
-                .map((e) -> new AppiumElementImpl(this, e))
-                .collect(Collectors.toList());
+        return findElements(this, appiumDriver, selector);
     }
 
     static By bySelector(Selector selector) {
@@ -154,101 +232,253 @@ public class AppiumDriverImpl implements Driver {
 
     @Override
     public void scrollDown() {
-        scrollDown(scrollDuration, scrollLength);
+        scrollDown(DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH);
     }
 
     @Override
     public void scrollDown(Duration duration, int length) {
+        scrollDown(duration, length, scrollContainer);
+    }
 
+
+    @Override
+    public void scrollDown(Duration duration, int length, Selector scrollContainer) {
+        VomUtils.scroll(this, ScrollDirection.DOWN, duration, length, scrollContainer);
     }
 
     @Override
     public void scrollDownTo(String text) {
-        scrollDownTo(text, scrollDuration, scrollLength);
+        scrollDownTo(text, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH);
     }
 
     @Override
     public void scrollDownTo(String text, Duration duration, int length) {
+        scrollDownTo(text, duration, length, scrollContainer);
+    }
 
+    @Override
+    public void scrollDownTo(String text, Duration duration, int length, Selector scrollContainer) {
+        scrollTo(text, () -> scrollDown(duration, length, scrollContainer));
+    }
+
+    private void scrollTo(String text, Runnable runnable) {
+        var limit = 50;
+        while (!isPresentText(text)) {
+
+            runnable.run();
+
+            limit--;
+            if (limit == 0) {
+                throw new InfinityLoopException("infinite scrolling, max scroll limit is 50");
+            }
+        }
     }
 
     @Override
     public void scrollUp() {
-        scrollUp(scrollDuration, scrollLength);
+        scrollUp(DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH);
     }
 
     @Override
     public void scrollUp(Duration duration, int length) {
+        scrollUp(duration, length, scrollContainer);
+    }
 
+    @Override
+    public void scrollUp(Duration duration, int length, Selector scrollContainer) {
+        VomUtils.scroll(this, ScrollDirection.UP, duration, length, scrollContainer);
     }
 
     @Override
     public void scrollUpTo(String text) {
-        scrollUpTo(text, scrollDuration, scrollLength);
+        scrollUpTo(text, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH);
     }
 
     @Override
     public void scrollUpTo(String text, Duration duration, int length) {
+        scrollUpTo(text, duration, length, scrollContainer);
+    }
 
+    @Override
+    public void scrollUpTo(String text, Duration duration, int length, Selector scrollContainer) {
+        scrollTo(text, () -> scrollUp(duration, length, scrollContainer));
     }
 
     @Override
     public void scrollLeft() {
-        scrollLeft(scrollDuration, scrollLength);
+        scrollLeft(DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH);
     }
 
     @Override
     public void scrollLeft(Duration duration, int length) {
+        scrollLeft(duration, length, scrollContainer);
+    }
 
+    @Override
+    public void scrollLeft(Duration duration, int length, Selector scrollContainer) {
+        VomUtils.scroll(this, ScrollDirection.LEFT, duration, length, scrollContainer);
     }
 
     @Override
     public void scrollLeftTo(String text) {
-        scrollLeftTo(text, scrollDuration, scrollLength);
+        scrollLeftTo(text, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH);
     }
 
     @Override
     public void scrollLeftTo(String text, Duration duration, int length) {
+        scrollLeftTo(text, duration, length, scrollContainer);
+    }
 
+    @Override
+    public void scrollLeftTo(String text, Duration duration, int length, Selector scrollContainer) {
+        scrollTo(text, () -> scrollLeft(duration, length, scrollContainer));
     }
 
     @Override
     public void scrollRight() {
-        scrollRight(scrollDuration, scrollLength);
+        scrollRight(DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH);
     }
 
     @Override
     public void scrollRight(Duration duration, int length) {
+        scrollRight(duration, length, scrollContainer);
+    }
 
+    @Override
+    public void scrollRight(Duration duration, int length, Selector scrollContainer) {
+        VomUtils.scroll(this, ScrollDirection.RIGHT, duration, length, scrollContainer);
     }
 
     @Override
     public void scrollRightTo(String text) {
-        scrollRightTo(text, scrollDuration, scrollLength);
+        scrollRightTo(text, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH);
     }
 
     @Override
     public void scrollRightTo(String text, Duration duration, int length) {
+        scrollRightTo(text, duration, length, scrollContainer);
+    }
 
+    @Override
+    public void scrollRightTo(String text, Duration duration, int length, Selector scrollContainer) {
+        scrollTo(text, () -> scrollRight(duration, length, scrollContainer));
     }
 
     @Override
     public void scrollDownToEnd() {
-
+        scrollToEdge(this::scrollDown);
     }
 
     @Override
     public void scrollUpToStart() {
-
+        scrollToEdge(this::scrollUp);
     }
 
     @Override
     public void scrollLeftToStart() {
-
+        scrollToEdge(this::scrollLeft);
     }
 
     @Override
     public void scrollRightToEnd() {
+        scrollToEdge(this::scrollRight);
+    }
+
+    private void scrollToEdge(Runnable runnable) {
+        byte[] screenshot;
+        try {
+            do {
+                screenshot = findElement(scrollContainer).takeScreenshot();
+                runnable.run();
+            } while (!Arrays.equals(screenshot, findElement(scrollContainer).takeScreenshot()));
+        } catch (StaleElementReferenceException ignore) {
+            scrollToEdge(runnable);
+        }
+
+    }
+
+    @Override
+    public boolean isPresentText(String text) {
+        Selector selector = Objects.requireNonNull(context.getCommonSelector("present_text")
+                , "present text selector ('present_text') was not found in neither resource folder nor repository");
+
+        HashMap<String, String> map = new HashMap<>();
+        map.put("text", text);
+        var fixed = StrSubstitutor.replace(selector.getValue(), map);
+        var e = findNullableElement(Selector.from(selector.getName(), selector.getType(), fixed));
+        return e != null;
+    }
+
+    @Override
+    public String getPageSource() {
+        return appiumDriver.getPageSource();
+    }
+
+    @Override
+    public byte[] takeScreenshot() {
+        return appiumDriver.getScreenshotAs(OutputType.BYTES);
+    }
+
+    @Override
+    public List<Integer> getCenterRGBColor(Selector selector) {
+        Element element = findElement(selector);
+        Point point = element.getCenterPoint();
+        return getRGBColor(point);
+    }
+
+    @Override
+    public List<Integer> getCenterRGBColor(Point point) {
+        return getRGBColor(point);
+    }
+
+    public List<Integer> getRGBColor(Point point){
+
+        int centerX = point.getX();
+        int centerY = point.getY();
+        File scrFile = getAppiumDriver().getScreenshotAs(OutputType.FILE);
+
+        BufferedImage image;
+        try {
+            image = ImageIO.read(scrFile);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        int clr = image.getRGB(centerX, centerY);
+        int red = (clr & 0x00ff0000) >> 16;
+        int green = (clr & 0x0000ff00) >> 8;
+        int blue = clr & 0x000000ff;
+
+        return new ArrayList<>(Arrays.asList(red, green, blue));
+    }
+
+    @Override
+    public void back() {
+        appiumDriver.navigate().back();
+    }
+
+    @Override
+    public void quit() {
+        appiumDriver.quit();
+    }
+
+    @Override
+    public void close() {
+        appiumDriver.close();
+    }
+
+    @Override
+    public Locale getLocale() {
+        Selector texts = context.getCommonSelector("not_empty_text");
+        try {
+            var l = findElements(texts)
+                    .stream()
+                    .map(Element::getText)
+                    .collect(Collectors.toList());
+
+            return VomUtils.getLocale(l);
+        } catch (StaleElementReferenceException ignore) {
+            return getLocale();
+        }
 
     }
 }

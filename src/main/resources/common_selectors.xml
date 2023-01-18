@@ -1,0 +1,29 @@
+<repository>
+    <platform name="android">
+        <selector>
+            <name>test</name>
+            <value>a</value>
+            <type>id</type>
+        </selector>
+        <selector>
+            <name>common_text</name>
+            <value>android.widget.TextView</value>
+            <type>class_name</type>
+        </selector>
+        <selector>
+            <name>scroll_container</name>
+            <value>(//*[(@class='android.widget.ListView') or (@class='android.widget.ScrollView') or (@class='androidx.recyclerview.widget.RecyclerView')])[1]</value>
+            <type>xpath</type>
+        </selector>
+        <selector>
+            <name>present_text</name>
+            <value>//*[@text='${text}']</value>
+            <type>xpath</type>
+        </selector>
+        <selector>
+            <name>not_empty_text</name>
+            <value>//*[string-length(@text) > 0]</value>
+            <type>xpath</type>
+        </selector>
+    </platform>
+</repository>

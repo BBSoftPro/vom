@@ -6,5 +6,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface Click {
+    int waitUntil() default -1;
+
     Class<?> returnType() default Void.class;
 }

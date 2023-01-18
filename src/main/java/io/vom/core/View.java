@@ -1,14 +1,16 @@
 package io.vom.core;
 
 import io.vom.utils.Point;
+import io.vom.utils.Selector;
 import io.vom.utils.Size;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 
-public abstract class View<T extends View<T>> implements Searchable {
+public class View<T extends View<T>> implements Searchable {
 
     private Context context;
     private Driver driver;
@@ -52,6 +54,10 @@ public abstract class View<T extends View<T>> implements Searchable {
         return click(point.getX(), point.getY());
     }
 
+    public boolean isPresentText(String text) {
+        return driver.isPresentText(text);
+    }
+
     public <V extends View<V>> V click(Point point, Class<V> vClass) {
         click(point);
 
@@ -64,12 +70,27 @@ public abstract class View<T extends View<T>> implements Searchable {
     }
 
     public Locale getLocale() {
-        return null;
+        return driver.getLocale();
     }
 
     @Override
     public Element findElement(Selector selector) {
         return context.getDriver().findElement(selector);
+    }
+
+    @Override
+    public Element findElement(Selector selector, Duration waitUntil) {
+        return context.getDriver().findElement(selector, waitUntil);
+    }
+
+    @Override
+    public Element findNullableElement(Selector selector) {
+        return context.getDriver().findNullableElement(selector);
+    }
+
+    @Override
+    public Element findNullableElement(Selector selector, Duration duration) {
+        return getContext().getDriver().findNullableElement(selector, duration);
     }
 
     @Override
@@ -92,6 +113,37 @@ public abstract class View<T extends View<T>> implements Searchable {
 
     public T scrollDownTo(String text) {
         driver.scrollDownTo(text);
+
+        return _self;
+    }
+
+    public byte[] takeScreenshot() {
+        return driver.takeScreenshot();
+    }
+
+    public List<Integer> getCenterRGBColor(Selector selector) {
+        return driver.getCenterRGBColor(selector);
+    }
+
+    public List<Integer> getCenterRGBColor(Point point) {
+        return driver.getCenterRGBColor(point);
+    }
+
+    public void close() {
+        driver.close();
+    }
+
+    public void quit() {
+        driver.quit();
+    }
+
+    public <P extends View<P>> P back(@NonNull Class<P> klass) {
+        driver.back();
+        return getContext().loadView(klass);
+    }
+
+    public View<?> back() {
+        driver.back();
 
         return _self;
     }
@@ -131,6 +183,16 @@ public abstract class View<T extends View<T>> implements Searchable {
 
     public T scrollLeft() {
         driver.scrollLeft();
+
+        return _self;
+    }
+
+    public T delay(int second) {
+        try {
+            Thread.sleep(second * 1000L);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         return _self;
     }
@@ -196,9 +258,13 @@ public abstract class View<T extends View<T>> implements Searchable {
         return _self;
     }
 
-    public T ScrollRightToEnd() {
+    public T scrollRightToEnd() {
         driver.scrollRightToEnd();
 
         return _self;
+    }
+
+    public String getPageSource() {
+        return driver.getPageSource();
     }
 }

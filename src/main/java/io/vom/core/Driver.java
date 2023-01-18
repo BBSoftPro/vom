@@ -1,11 +1,16 @@
 package io.vom.core;
 
 import io.vom.utils.Point;
+import io.vom.utils.Selector;
 import io.vom.utils.Size;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.Locale;
 
 public interface Driver extends Searchable {
+    void prepare(Context context);
+
     String getPlatform();
 
     void slipFinger(Point from, Point to, Duration duration);
@@ -20,33 +25,49 @@ public interface Driver extends Searchable {
 
     void scrollDown(Duration duration, int length);
 
+    void scrollDown(Duration duration, int length, Selector scrollContainer);
+
     void scrollDownTo(String text);
 
     void scrollDownTo(String text, Duration duration, int length);
+
+    void scrollDownTo(String text, Duration duration, int length, Selector scrollContainer);
 
     void scrollUp();
 
     void scrollUp(Duration duration, int length);
 
+    void scrollUp(Duration duration, int length, Selector scrollContainer);
+
     void scrollUpTo(String text);
 
     void scrollUpTo(String text, Duration duration, int length);
+
+    void scrollUpTo(String text, Duration duration, int length, Selector selector);
 
     void scrollLeft();
 
     void scrollLeft(Duration duration, int length);
 
+    void scrollLeft(Duration duration, int length, Selector scrollContainer);
+
     void scrollLeftTo(String text);
 
     void scrollLeftTo(String text, Duration duration, int length);
+
+    void scrollLeftTo(String text, Duration duration, int length, Selector scrollContainer);
 
     void scrollRight();
 
     void scrollRight(Duration duration, int length);
 
+    void scrollRight(Duration duration, int length, Selector scrollContainer);
+
     void scrollRightTo(String text);
 
     void scrollRightTo(String text, Duration duration, int length);
+
+    void scrollRightTo(String text, Duration duration, int length, Selector scrollContainer);
 
     void scrollDownToEnd();
 
@@ -55,4 +76,22 @@ public interface Driver extends Searchable {
     void scrollLeftToStart();
 
     void scrollRightToEnd();
+
+    boolean isPresentText(String text);
+
+    String getPageSource();
+
+    byte[] takeScreenshot();
+
+    void back();
+
+    void quit();
+
+    void close();
+
+    Locale getLocale();
+
+    List<Integer> getCenterRGBColor(Selector selector);
+
+    List<Integer> getCenterRGBColor(Point point);
 }

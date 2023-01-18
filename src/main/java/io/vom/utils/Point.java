@@ -1,12 +1,19 @@
 package io.vom.utils;
 
-public class Point {
+public class Point implements Cloneable{
     int x;
     int y;
 
     public Point(int x, int y) {
         this.x = x;
         this.y = y;
+    }
+
+    public Point move(int x,int y){
+        this.x = this.x + x;
+        this.y = this.y + y;
+
+        return this;
     }
 
     public int getX() {
@@ -49,5 +56,14 @@ public class Point {
                 "x=" + x +
                 ", y=" + y +
                 '}';
+    }
+
+    @Override
+    public Point clone(){
+        try {
+           return (Point) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

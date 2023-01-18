@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<repository>
+    <platform name="android">
+        <selector>
+            <name>lists</name>
+            <value>//*[@resource-id='io.vom:id/list']/*</value>
+            <type>xpath</type>
+        </selector>
+    </platform>
+</repository>

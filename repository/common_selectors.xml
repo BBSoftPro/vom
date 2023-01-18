@@ -1,0 +1,9 @@
+<repository>
+    <platform name="android">
+        <selector>
+            <name>test</name>
+            <value>b</value>
+            <type>xpath</type>
+        </selector>
+    </platform>
+</repository>
