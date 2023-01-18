@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<repository>
+    <platform name="android">
+        <selector>
+            <name>username</name>
+            <value>(//android.widget.EditText)[1]</value>
+            <type>xpath</type>
+        </selector>
+        <selector>
+            <name>login</name>
+            <value>io.vom:id/loginButton</value>
+            <type>id</type>
+        </selector>
+    </platform>
+</repository>

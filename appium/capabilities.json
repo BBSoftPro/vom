@@ -1,0 +1,13 @@
+[
+  {
+    "platformName": "Android",
+    "appActivity": "MainActivity",
+    "appPackage": "io.vom"
+  },
+  {
+    "platformName": "iOS",
+    "platformVersion": "11.0",
+    "deviceName": "iPhone 7",
+    "automationName": "XCUITest"
+  }
+]
