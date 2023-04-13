@@ -1,13 +1,11 @@
 package io.vom.utils;
 
-import io.vom.exceptions.SelectorNotFoundException;
-import io.vom.annotations.actions.Clear;
-import io.vom.annotations.actions.Click;
-import io.vom.annotations.actions.GetText;
-import io.vom.annotations.actions.SetText;
+import io.vom.annotations.actions.*;
 import io.vom.annotations.repositories.Name;
 import io.vom.core.Context;
+import io.vom.core.Element;
 import io.vom.core.View;
+import io.vom.exceptions.SelectorNotFoundException;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.implementation.InvocationHandlerAdapter;
 import net.bytebuddy.matcher.ElementMatchers;
@@ -18,6 +16,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ReflectionUtils {
 
@@ -25,13 +24,16 @@ public class ReflectionUtils {
 
     static {
         actionHandler.put(GetText.class, ReflectionUtils::invokeGetter);
+        actionHandler.put(GetTexts.class, ReflectionUtils::invokeGetters);
         actionHandler.put(SetText.class, ReflectionUtils::invokeSetter);
         actionHandler.put(Clear.class, ReflectionUtils::invokeClearer);
         actionHandler.put(Click.class, ReflectionUtils::invokeClicker);
+        actionHandler.put(TakeScreenshot.class, ReflectionUtils::invokeScreenshot);
+        actionHandler.put(GetAverageColor.class, ReflectionUtils::invokeGettingColor);
     }
 
 
-    public static <T extends View<T>> T createPageObject(@NonNull Context context,@NonNull Class<T> pClass) throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
+    public static <T extends View<T>> T createPageObject(@NonNull Context context, @NonNull Class<T> pClass) throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
         var map = new HashMap<Method, InvocationHandler>();
 
         Arrays.stream(pClass.getMethods()).forEach(method -> {
@@ -46,7 +48,7 @@ public class ReflectionUtils {
         return obj;
     }
 
-    private static void injectFields(@NonNull Context context,@NonNull View<?> obj) {
+    private static void injectFields(@NonNull Context context, @NonNull View<?> obj) {
         Class<?> klass = obj.getClass();
         while (klass != null) {
             var className = klass.getSimpleName();
@@ -67,8 +69,8 @@ public class ReflectionUtils {
 
                         var found = selectors.get(name);
 
-                        if (found == null){
-                            throw new SelectorNotFoundException("Selector named: '" + name + "' was not found, Selector holder class is '"+className+"'");
+                        if (found == null) {
+                            throw new SelectorNotFoundException("Selector named: '" + name + "' was not found, Selector holder class is '" + className + "'");
                         }
 
                         try {
@@ -154,6 +156,18 @@ public class ReflectionUtils {
         return createPageObject(view.getContext(), returnClass);
     }
 
+    private static byte[] invokeScreenshot(Object self, Method method, Object[] objects) {
+        var view = (View<?>) self;
+        Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
+        return view.findElement(selector).takeScreenshot();
+    }
+
+    private static Object invokeGettingColor(Object self, Method method, Object[] objects) {
+        var view = (View<?>) self;
+        Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
+        return view.findElement(selector).getAverageColor();
+    }
+
     private static Object invokeGetter(Object self, Method method, Object[] objects) {
         var view = (View<?>) self;
         Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
@@ -163,6 +177,14 @@ public class ReflectionUtils {
         } else {
             throw new ClassCastException("Method: " + method.getName() + "'s return type must be String");
         }
+    }
+
+    private static List<Object> invokeGetters(Object self, Method method, Object[] objects) {
+        var view = (View<?>) self;
+        Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
+        return view.findElements(selector)
+                .stream().map(Element::getText)
+                .collect(Collectors.toList());
     }
 
     public static class Handler implements InvocationHandler {
