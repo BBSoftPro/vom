@@ -5,7 +5,6 @@ import io.vom.utils.Selector;
 import io.vom.utils.Size;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.Locale;
 
 public interface Driver extends Searchable {
@@ -33,6 +32,12 @@ public interface Driver extends Searchable {
 
     void scrollDownTo(String text, Duration duration, int length, Selector scrollContainer);
 
+    void scrollDownTo(Selector selector);
+
+    void scrollDownTo(Selector selector, Duration duration, int length);
+
+    void scrollDownTo(Selector selector, Duration duration, int length, Selector scrollContainer);
+
     void scrollUp();
 
     void scrollUp(Duration duration, int length);
@@ -44,6 +49,12 @@ public interface Driver extends Searchable {
     void scrollUpTo(String text, Duration duration, int length);
 
     void scrollUpTo(String text, Duration duration, int length, Selector selector);
+
+    void scrollUpTo(Selector selector);
+
+    void scrollUpTo(Selector selector, Duration duration, int length);
+
+    void scrollUpTo(Selector selector, Duration duration, int length, Selector scrollContainer);
 
     void scrollLeft();
 
@@ -91,7 +102,7 @@ public interface Driver extends Searchable {
 
     Locale getLocale();
 
-    List<Integer> getCenterRGBColor(Selector selector);
+    Object getCenterColor(Selector selector);
 
-    List<Integer> getCenterRGBColor(Point point);
+    Object getCenterColor(Point point);
 }

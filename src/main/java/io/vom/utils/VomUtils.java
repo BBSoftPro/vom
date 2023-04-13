@@ -6,7 +6,6 @@ import com.github.pemistahl.lingua.api.LanguageDetector;
 import com.github.pemistahl.lingua.api.LanguageDetectorBuilder;
 import io.vom.core.Driver;
 import io.vom.core.Element;
-import org.apache.commons.lang.math.RandomUtils;
 import org.openqa.selenium.StaleElementReferenceException;
 
 import java.time.Duration;
@@ -37,6 +36,7 @@ public class VomUtils {
         var driver = element.getDriver();
 
         var centerPoint = element.getCenterPoint();
+//        System.out.println(centerPoint);
         var d = createScrollDirection(centerPoint, element.getSize(), length, direction);
 
         driver.slipFinger(d.getStartPoint(), d.getEndPoint(), duration);
@@ -72,6 +72,7 @@ public class VomUtils {
                         .move(-length, 0);
                 break;
         }
+//        System.out.println("startPoint: " + startPoint + ", " + "endPoint: " + endPoint);
 
         return new Direction(startPoint.clone(), endPoint);
     }

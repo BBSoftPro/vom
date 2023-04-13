@@ -36,9 +36,9 @@ public interface Collectable<E extends ElementSupplier> {
                     , getScrollLength());
 
             var post = getViewList();
-            if (!pre.equals(post)){
+            if (!pre.equals(post)) {
                 pre = post;
-            }else {
+            } else {
                 return null;
             }
         } while (true);
@@ -66,6 +66,25 @@ public interface Collectable<E extends ElementSupplier> {
                 break;
             } else {
                 before = after;
+            }
+        }
+
+        return l.stream().distinct().collect(Collectors.toList());
+    }
+
+    default List<E> collect(int count) {
+        var l = Lists.<E>newArrayList();
+
+        for (int i = 0; i < count; i++) {
+            List<E> mList = getViewList();
+            if (l.size() != 0) {
+                VomUtils.scroll(mList.stream().map(ElementSupplier::getElement).collect(Collectors.toList())
+                        , getScrollDirection()
+                        , getScrollDuration()
+                        , getScrollLength());
+                l.addAll(mList);
+            } else {
+                l.addAll(mList);
             }
         }
 

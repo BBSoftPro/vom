@@ -104,7 +104,6 @@ public class View<T extends View<T>> implements Searchable {
         return _self;
     }
 
-
     public T scrollDown(Duration duration, int length) {
         driver.scrollDown(duration, length);
 
@@ -117,44 +116,23 @@ public class View<T extends View<T>> implements Searchable {
         return _self;
     }
 
-    public byte[] takeScreenshot() {
-        return driver.takeScreenshot();
-    }
-
-    public List<Integer> getCenterRGBColor(Selector selector) {
-        return driver.getCenterRGBColor(selector);
-    }
-
-    public List<Integer> getCenterRGBColor(Point point) {
-        return driver.getCenterRGBColor(point);
-    }
-
-    public void close() {
-        driver.close();
-    }
-
-    public void quit() {
-        driver.quit();
-    }
-
-    public <P extends View<P>> P back(@NonNull Class<P> klass) {
-        driver.back();
-        return getContext().loadView(klass);
-    }
-
-    public View<?> back() {
-        driver.back();
-
-        return _self;
-    }
-
-
     public T scrollDownTo(String text, Duration duration, int length) {
         driver.scrollDownTo(text, duration, length);
 
         return _self;
     }
 
+    public T scrollDownTo(Selector selector) {
+        driver.scrollDownTo(selector);
+
+        return _self;
+    }
+
+    public T scrollDownTo(Selector selector, Duration duration, int length) {
+        driver.scrollDownTo(selector, duration, length);
+
+        return _self;
+    }
 
     public T scrollUp() {
         driver.scrollUp();
@@ -176,6 +154,18 @@ public class View<T extends View<T>> implements Searchable {
 
     public T scrollUpTo(String text, Duration duration, int length) {
         driver.scrollUpTo(text, duration, length);
+
+        return _self;
+    }
+
+    public T scrollUpTo(Selector selector) {
+        driver.scrollUpTo(selector);
+
+        return _self;
+    }
+
+    public T scrollUpTo(Selector selector, Duration duration, int length) {
+        driver.scrollUpTo(selector, duration, length);
 
         return _self;
     }
@@ -215,7 +205,6 @@ public class View<T extends View<T>> implements Searchable {
         return _self;
     }
 
-
     public T scrollRight() {
         driver.scrollRight();
 
@@ -240,14 +229,14 @@ public class View<T extends View<T>> implements Searchable {
         return _self;
     }
 
-    public T scrollDownToEnd() {
-        driver.scrollDownToEnd();
+    public T scrollUpToStart() {
+        driver.scrollUpToStart();
 
         return _self;
     }
 
-    public T scrollUpToStart() {
-        driver.scrollUpToStart();
+    public T scrollDownToEnd() {
+        driver.scrollDownToEnd();
 
         return _self;
     }
@@ -260,6 +249,37 @@ public class View<T extends View<T>> implements Searchable {
 
     public T scrollRightToEnd() {
         driver.scrollRightToEnd();
+
+        return _self;
+    }
+
+    public byte[] takeScreenshot() {
+        return driver.takeScreenshot();
+    }
+
+    public Object getCenterRGBColor(Selector selector) {
+        return driver.getCenterColor(selector);
+    }
+
+    public Object getCenterRGBColor(Point point) {
+        return driver.getCenterColor(point);
+    }
+
+    public void close() {
+        driver.close();
+    }
+
+    public void quit() {
+        driver.quit();
+    }
+
+    public <P extends View<P>> P back(@NonNull Class<P> klass) {
+        driver.back();
+        return getContext().loadView(klass);
+    }
+
+    public View<?> back() {
+        driver.back();
 
         return _self;
     }

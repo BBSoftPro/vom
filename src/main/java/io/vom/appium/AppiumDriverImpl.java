@@ -2,7 +2,6 @@ package io.vom.appium;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.sun.source.tree.TryTree;
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
@@ -42,8 +41,9 @@ public class AppiumDriverImpl implements Driver {
 
     AppiumDriver appiumDriver;
     private Context context;
-
     private Selector scrollContainer;
+    public static URL url;
+    public static DesiredCapabilities caps;
 
     @Override
     public void prepare(Context context) {
@@ -66,7 +66,7 @@ public class AppiumDriverImpl implements Driver {
         var prop = Properties.getInstance();
 
         try {
-            var url = new URL(prop.getProperty("appium_url"));
+            url = new URL(prop.getProperty("appium_url"));
             var reader = new FileReader(FileUtils.getFullPath(prop.getProperty("appium_caps_json_file")));
 
             Gson gson = new Gson();
@@ -82,7 +82,8 @@ public class AppiumDriverImpl implements Driver {
                     .findAny()
                     .orElseThrow(() -> new PlatformNotFoundException("Platform: '" + platform + "' was not found on appium json file"));
 
-            var caps = new DesiredCapabilities(map);
+            caps = new DesiredCapabilities(map);
+
             if (platform.equals("android")) {
                 appiumDriver = new AndroidDriver(url, caps);
             } else if (platform.equals("ios")) {
@@ -117,7 +118,6 @@ public class AppiumDriverImpl implements Driver {
             }
         });
     }
-
 
     public static List<Element> findElements(AppiumDriverImpl driver, SearchContext searchContext, Selector selector) {
         return searchContext.findElements(bySelector(selector))
@@ -261,9 +261,37 @@ public class AppiumDriverImpl implements Driver {
         scrollTo(text, () -> scrollDown(duration, length, scrollContainer));
     }
 
+    @Override
+    public void scrollDownTo(Selector selector) {
+        scrollDownTo(selector, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH);
+    }
+
+    @Override
+    public void scrollDownTo(Selector selector, Duration duration, int length) {
+        scrollDownTo(selector, duration, length, scrollContainer);
+    }
+
+    @Override
+    public void scrollDownTo(Selector selector, Duration duration, int length, Selector scrollContainer) {
+        scrollTo(selector, () -> scrollDown(duration, length, scrollContainer));
+    }
+
     private void scrollTo(String text, Runnable runnable) {
         var limit = 50;
         while (!isPresentText(text)) {
+
+            runnable.run();
+
+            limit--;
+            if (limit == 0) {
+                throw new InfinityLoopException("infinite scrolling, max scroll limit is 50");
+            }
+        }
+    }
+
+    private void scrollTo(Selector selector, Runnable runnable) {
+        var limit = 50;
+        while (findNullableElement(selector) == null) {
 
             runnable.run();
 
@@ -295,6 +323,11 @@ public class AppiumDriverImpl implements Driver {
     }
 
     @Override
+    public void scrollUpTo(Selector selector) {
+        scrollUpTo(selector, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH);
+    }
+
+    @Override
     public void scrollUpTo(String text, Duration duration, int length) {
         scrollUpTo(text, duration, length, scrollContainer);
     }
@@ -302,6 +335,16 @@ public class AppiumDriverImpl implements Driver {
     @Override
     public void scrollUpTo(String text, Duration duration, int length, Selector scrollContainer) {
         scrollTo(text, () -> scrollUp(duration, length, scrollContainer));
+    }
+
+    @Override
+    public void scrollUpTo(Selector selector, Duration duration, int length) {
+        scrollUpTo(selector, duration, length, scrollContainer);
+    }
+
+    @Override
+    public void scrollUpTo(Selector selector, Duration duration, int length, Selector scrollContainer) {
+        scrollTo(selector, () -> scrollUp(duration, length, scrollContainer));
     }
 
     @Override
@@ -394,7 +437,6 @@ public class AppiumDriverImpl implements Driver {
         } catch (StaleElementReferenceException ignore) {
             scrollToEdge(runnable);
         }
-
     }
 
     @Override
@@ -420,18 +462,18 @@ public class AppiumDriverImpl implements Driver {
     }
 
     @Override
-    public List<Integer> getCenterRGBColor(Selector selector) {
+    public Object getCenterColor(Selector selector) {
         Element element = findElement(selector);
         Point point = element.getCenterPoint();
-        return getRGBColor(point);
+        return getColor(point);
     }
 
     @Override
-    public List<Integer> getCenterRGBColor(Point point) {
-        return getRGBColor(point);
+    public Object getCenterColor(Point point) {
+        return getColor(point);
     }
 
-    public List<Integer> getRGBColor(Point point){
+    public Object getColor(Point point) {
 
         int centerX = point.getX();
         int centerY = point.getY();
@@ -448,7 +490,11 @@ public class AppiumDriverImpl implements Driver {
         int green = (clr & 0x0000ff00) >> 8;
         int blue = clr & 0x000000ff;
 
-        return new ArrayList<>(Arrays.asList(red, green, blue));
+        return String.join(
+                ",",
+                String.valueOf(red),
+                String.valueOf(green),
+                String.valueOf(blue));
     }
 
     @Override
@@ -479,6 +525,5 @@ public class AppiumDriverImpl implements Driver {
         } catch (StaleElementReferenceException ignore) {
             return getLocale();
         }
-
     }
 }

@@ -3,15 +3,13 @@ package io.vom.appium;
 import io.vom.core.Driver;
 import io.vom.core.Element;
 import io.vom.exceptions.ElementNotFoundException;
-import io.vom.utils.Point;
-import io.vom.utils.Properties;
-import io.vom.utils.Selector;
-import io.vom.utils.Size;
+import io.vom.utils.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.WebElement;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AppiumElementImpl implements Element {
@@ -51,7 +49,6 @@ public class AppiumElementImpl implements Element {
     public void click() {
         webElement.click();
     }
-
 
     @Override
     public Size getSize() {
@@ -108,8 +105,31 @@ public class AppiumElementImpl implements Element {
     }
 
     @Override
-    public List<Integer> getCenterRGBColor() {
-        return getDriver().getCenterRGBColor(getCenterPoint());
+    public Object getAverageColor() {
+        Size size = getSize();
+        Point point = getPoint();
+
+        int x = (point.getX() + 5);
+        int y = (point.getY() + 5);
+
+        int times = 20;
+        int mWidth = (size.getWidth() / times);
+        int mHeight = (size.getHeight() / times);
+        int c = times - 1;
+
+        List<Object> rgbColorsList = new ArrayList<>();
+        for (int i = 0; i < c; i++) {
+            x = x + mWidth;
+            y = y + mHeight;
+            rgbColorsList.add(getCenterRGBColor());
+        }
+
+        return CollectionUtils.getAverageDuplicateUniqFromObjectList(rgbColorsList);
+    }
+
+    @Override
+    public Object getCenterRGBColor() {
+        return getDriver().getCenterColor(getCenterPoint());
     }
 
     @Override

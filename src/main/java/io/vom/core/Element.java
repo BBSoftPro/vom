@@ -4,7 +4,6 @@ import io.vom.utils.Point;
 import io.vom.utils.Size;
 
 import java.time.Duration;
-import java.util.List;
 
 public interface Element extends Searchable {
 
@@ -36,5 +35,7 @@ public interface Element extends Searchable {
 
     byte[] takeScreenshot();
 
-    List<Integer> getCenterRGBColor();
+    Object getCenterRGBColor();
+
+    Object getAverageColor();
 }
