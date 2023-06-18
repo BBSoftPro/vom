@@ -26,4 +26,11 @@
             <type>xpath</type>
         </selector>
     </platform>
+    <platform name="ios">
+    <selector>
+        <name>test</name>
+        <value>a</value>
+        <type>id</type>
+    </selector>
+    </platform>
 </repository>

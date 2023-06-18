@@ -167,6 +167,10 @@ public class AppiumDriverImpl implements Driver {
                 return AppiumBy.id(value);
             case "class_name":
                 return AppiumBy.className(value);
+            case "ios_predicate_string":
+                return AppiumBy.iOSNsPredicateString(value);
+            case "ios_class_chain":
+                return AppiumBy.iOSClassChain(value);
             default:
                 throw new UnsupportedOperationException("Unsupported selector type");
         }
