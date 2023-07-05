@@ -3,6 +3,7 @@ package io.vom.core;
 import io.vom.utils.Point;
 import io.vom.utils.Size;
 
+import java.awt.image.BufferedImage;
 import java.time.Duration;
 
 public interface Element extends Searchable {
@@ -38,4 +39,6 @@ public interface Element extends Searchable {
     Object getCenterRGBColor();
 
     Object getAverageColor();
+
+    BufferedImage getImage();
 }

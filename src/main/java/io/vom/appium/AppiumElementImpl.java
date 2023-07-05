@@ -5,9 +5,16 @@ import io.vom.core.Element;
 import io.vom.exceptions.ElementNotFoundException;
 import io.vom.utils.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebElement;
 
+import javax.imageio.ImageIO;
+import javax.imageio.stream.FileImageInputStream;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -102,6 +109,32 @@ public class AppiumElementImpl implements Element {
     @Override
     public byte[] takeScreenshot() {
         return webElement.getScreenshotAs(OutputType.BYTES);
+    }
+
+    @Override
+    public BufferedImage getImage() {
+        File screenshot = ((TakesScreenshot) driver.getAppiumDriver()).getScreenshotAs(OutputType.FILE);
+        Dimension size = webElement.getSize();
+        org.openqa.selenium.Point point = webElement.getLocation();
+
+        FileImageInputStream inputStream = null;
+        try {
+            inputStream = new FileImageInputStream(screenshot);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        BufferedImage fullScreenshot = null;
+        try {
+            fullScreenshot = ImageIO.read(inputStream);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return fullScreenshot.getSubimage(
+                point.getX(),
+                point.getY(),
+                size.getWidth(),
+                size.getHeight()
+        );
     }
 
     @Override
