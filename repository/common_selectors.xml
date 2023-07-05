@@ -6,4 +6,11 @@
             <type>xpath</type>
         </selector>
     </platform>
+    <platform name="ios">
+        <selector>
+            <name>test</name>
+            <value>b</value>
+            <type>xpath</type>
+        </selector>
+    </platform>
 </repository>
