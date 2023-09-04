@@ -1,5 +1,6 @@
 package io.vom.core;
 
+import io.qameta.allure.Step;
 import io.vom.utils.Point;
 import io.vom.utils.Selector;
 import io.vom.utils.Size;
@@ -177,6 +178,7 @@ public class View<T extends View<T>> implements Searchable {
         return _self;
     }
 
+    @Step
     public T delay(int second) {
         try {
             Thread.sleep(second * 1000L);
