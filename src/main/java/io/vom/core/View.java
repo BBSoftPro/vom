@@ -178,7 +178,6 @@ public class View<T extends View<T>> implements Searchable {
         return _self;
     }
 
-    @Step
     public T delay(int second) {
         try {
             Thread.sleep(second * 1000L);
@@ -188,6 +187,26 @@ public class View<T extends View<T>> implements Searchable {
 
         return _self;
     }
+
+    @Step
+    public T delayStep(int second) {
+        try {
+            Thread.sleep(second * 1000L);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        return _self;
+    }
+
+    public T delay(int second, boolean reportStep) {
+        if (reportStep) {
+            return delay(second);
+        } else {
+            return delayStep(second);
+        }
+    }
+
 
     public T scrollLeft(Duration duration, int length) {
         driver.scrollLeft(duration, length);
