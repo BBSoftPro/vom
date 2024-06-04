@@ -20,8 +20,6 @@ public class Selector {
         return value;
     }
 
-
-
     public static Selector from(String type,String value){
         Objects.requireNonNull(type);
         Objects.requireNonNull(value);
