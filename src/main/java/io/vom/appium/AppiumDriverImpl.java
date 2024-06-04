@@ -165,6 +165,10 @@ public class AppiumDriverImpl implements Driver {
                 return AppiumBy.xpath(value);
             case "id":
                 return AppiumBy.id(value);
+            case "uiautomator":
+                return AppiumBy.androidUIAutomator(value);
+            case "accessibility_id":
+                return AppiumBy.accessibilityId(value);
             case "class_name":
                 return AppiumBy.className(value);
             case "ios_predicate_string":
