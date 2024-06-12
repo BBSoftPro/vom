@@ -336,6 +336,11 @@ public class AppiumDriverImpl implements Driver {
     }
 
     @Override
+    public void scrollUpTo(Selector selector, Selector scrollContainer) {
+        scrollUpTo(selector, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH, scrollContainer);
+    }
+
+    @Override
     public void scrollUpTo(String text, Duration duration, int length) {
         scrollUpTo(text, duration, length, scrollContainer);
     }

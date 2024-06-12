@@ -28,7 +28,7 @@ public class VomUtils {
     }
 
     public static void scroll(List<Element> elements, ScrollDirection direction, Duration duration, int length) {
-        if (elements.size() == 0) return;
+        if (elements.isEmpty()) return;
 
         int target = elements.size() / 2;
 

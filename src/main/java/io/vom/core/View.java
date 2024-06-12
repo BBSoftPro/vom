@@ -165,8 +165,20 @@ public class View<T extends View<T>> implements Searchable {
         return _self;
     }
 
+    public T scrollUpTo(Selector selector, Selector scrollContainer) {
+        driver.scrollUpTo(selector, scrollContainer);
+
+        return _self;
+    }
+
     public T scrollUpTo(Selector selector, Duration duration, int length) {
         driver.scrollUpTo(selector, duration, length);
+
+        return _self;
+    }
+
+    public T scrollUpTo(Selector selector, Duration duration, int length, Selector scrollContainer) {
+        driver.scrollUpTo(selector, duration, length, scrollContainer);
 
         return _self;
     }

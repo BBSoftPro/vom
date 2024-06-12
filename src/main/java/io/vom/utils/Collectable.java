@@ -77,7 +77,7 @@ public interface Collectable<E extends ElementSupplier> {
 
         for (int i = 0; i < count; i++) {
             List<E> mList = getViewList();
-            if (l.size() != 0) {
+            if (!l.isEmpty()) {
                 VomUtils.scroll(mList.stream().map(ElementSupplier::getElement).collect(Collectors.toList())
                         , getScrollDirection()
                         , getScrollDuration()
