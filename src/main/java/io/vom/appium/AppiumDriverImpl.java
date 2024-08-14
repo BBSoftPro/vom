@@ -165,6 +165,10 @@ public class AppiumDriverImpl implements Driver {
                 return AppiumBy.xpath(value);
             case "id":
                 return AppiumBy.id(value);
+            case "uiautomator":
+                return AppiumBy.androidUIAutomator(value);
+            case "accessibility_id":
+                return AppiumBy.accessibilityId(value);
             case "class_name":
                 return AppiumBy.className(value);
             case "ios_predicate_string":
@@ -332,6 +336,11 @@ public class AppiumDriverImpl implements Driver {
     }
 
     @Override
+    public void scrollUpTo(Selector selector, Selector scrollContainer) {
+        scrollUpTo(selector, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH, scrollContainer);
+    }
+
+    @Override
     public void scrollUpTo(String text, Duration duration, int length) {
         scrollUpTo(text, duration, length, scrollContainer);
     }
@@ -354,6 +363,11 @@ public class AppiumDriverImpl implements Driver {
     @Override
     public void scrollLeft() {
         scrollLeft(DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH);
+    }
+
+    @Override
+    public void scrollLeft(Selector draggableSelector) {
+        VomUtils.scroll(this, ScrollDirection.LEFT, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH, draggableSelector);
     }
 
     @Override
@@ -427,6 +441,11 @@ public class AppiumDriverImpl implements Driver {
     }
 
     @Override
+    public void scrollLeftToStart(Selector draggableselector) {
+        scrollToEdge(() -> scrollLeft(draggableselector), draggableselector);
+    }
+
+    @Override
     public void scrollRightToEnd() {
         scrollToEdge(this::scrollRight);
     }
@@ -438,6 +457,18 @@ public class AppiumDriverImpl implements Driver {
                 screenshot = findElement(scrollContainer).takeScreenshot();
                 runnable.run();
             } while (!Arrays.equals(screenshot, findElement(scrollContainer).takeScreenshot()));
+        } catch (StaleElementReferenceException ignore) {
+            scrollToEdge(runnable);
+        }
+    }
+
+    private void scrollToEdge(Runnable runnable, Selector innerScrollContainer) {
+        byte[] screenshot;
+        try {
+            do {
+                screenshot = findElement(innerScrollContainer).takeScreenshot();
+                runnable.run();
+            } while (!Arrays.equals(screenshot, findElement(innerScrollContainer).takeScreenshot()));
         } catch (StaleElementReferenceException ignore) {
             scrollToEdge(runnable);
         }

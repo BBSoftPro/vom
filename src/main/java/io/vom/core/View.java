@@ -1,5 +1,6 @@
 package io.vom.core;
 
+import io.qameta.allure.Step;
 import io.vom.utils.Point;
 import io.vom.utils.Selector;
 import io.vom.utils.Size;
@@ -164,8 +165,20 @@ public class View<T extends View<T>> implements Searchable {
         return _self;
     }
 
+    public T scrollUpTo(Selector selector, Selector scrollContainer) {
+        driver.scrollUpTo(selector, scrollContainer);
+
+        return _self;
+    }
+
     public T scrollUpTo(Selector selector, Duration duration, int length) {
         driver.scrollUpTo(selector, duration, length);
+
+        return _self;
+    }
+
+    public T scrollUpTo(Selector selector, Duration duration, int length, Selector scrollContainer) {
+        driver.scrollUpTo(selector, duration, length, scrollContainer);
 
         return _self;
     }
@@ -173,6 +186,12 @@ public class View<T extends View<T>> implements Searchable {
 
     public T scrollLeft() {
         driver.scrollLeft();
+
+        return _self;
+    }
+
+    public T scrollLeft(Selector draggableselector) {
+        driver.scrollLeft(draggableselector);
 
         return _self;
     }
@@ -186,6 +205,26 @@ public class View<T extends View<T>> implements Searchable {
 
         return _self;
     }
+
+    @Step
+    public T delayStep(int second) {
+        try {
+            Thread.sleep(second * 1000L);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        return _self;
+    }
+
+    public T delay(int second, boolean reportStep) {
+        if (reportStep) {
+            return delay(second);
+        } else {
+            return delayStep(second);
+        }
+    }
+
 
     public T scrollLeft(Duration duration, int length) {
         driver.scrollLeft(duration, length);
@@ -243,6 +282,12 @@ public class View<T extends View<T>> implements Searchable {
 
     public T scrollLeftToStart() {
         driver.scrollLeftToStart();
+
+        return _self;
+    }
+
+    public T scrollLeftToStart(Selector selector) {
+        driver.scrollLeftToStart(selector);
 
         return _self;
     }

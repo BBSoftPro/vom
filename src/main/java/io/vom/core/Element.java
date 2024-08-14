@@ -18,6 +18,8 @@ public interface Element extends Searchable {
 
     void click();
 
+    <P extends View<P>> P click(Class<P> klass);
+
     Size getSize();
 
     Point getPoint();
@@ -25,6 +27,8 @@ public interface Element extends Searchable {
     void removeFocus();
 
     boolean isFocused();
+
+    boolean isEnabled();
 
     String getAttribute(String attr);
 

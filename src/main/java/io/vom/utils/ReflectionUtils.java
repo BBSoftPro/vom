@@ -1,5 +1,6 @@
 package io.vom.utils;
 
+import io.qameta.allure.Allure;
 import io.vom.annotations.actions.*;
 import io.vom.annotations.repositories.Name;
 import io.vom.core.Context;
@@ -122,6 +123,7 @@ public class ReflectionUtils {
 
         var text = Objects.requireNonNull(objects[0], method.getName() + "argument is null").toString();
         view.findElement(selector).setText(text);
+        Allure.step(method.getName(), () -> Allure.step(text));
 
         return getReturn(self, method, annotation);
     }
@@ -145,9 +147,9 @@ public class ReflectionUtils {
         }
     }
 
-
     @SuppressWarnings({"unchecked", "rawtypes", "SuspiciousInvocationHandlerImplementation"})
     private static Object invokeClicker(Object self, Method method, Object[] objects) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        Allure.step(method.getName());
         var view = (View<?>) self;
         Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
         view.findElement(selector).click();
