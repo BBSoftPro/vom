@@ -2,6 +2,7 @@ package io.vom.appium;
 
 import io.vom.core.Driver;
 import io.vom.core.Element;
+import io.vom.core.View;
 import io.vom.exceptions.ElementNotFoundException;
 import io.vom.utils.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -58,6 +59,16 @@ public class AppiumElementImpl implements Element {
     }
 
     @Override
+    public <P extends View<P>> P click(Class<P> klass) {
+        webElement.click();
+        try {
+            return klass.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create an instance of " + klass.getName(), e);
+        }
+    }
+
+    @Override
     public Size getSize() {
         var dim = webElement.getSize();
         return new Size(dim.getWidth(), dim.getHeight());
@@ -81,6 +92,11 @@ public class AppiumElementImpl implements Element {
     @Override
     public boolean isFocused() {
         return Boolean.parseBoolean(getAttribute("focused"));
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return webElement.isEnabled();
     }
 
     @Override

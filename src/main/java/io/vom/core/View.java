@@ -190,6 +190,12 @@ public class View<T extends View<T>> implements Searchable {
         return _self;
     }
 
+    public T scrollLeft(Selector draggableselector) {
+        driver.scrollLeft(draggableselector);
+
+        return _self;
+    }
+
     public T delay(int second) {
         try {
             Thread.sleep(second * 1000L);
@@ -276,6 +282,12 @@ public class View<T extends View<T>> implements Searchable {
 
     public T scrollLeftToStart() {
         driver.scrollLeftToStart();
+
+        return _self;
+    }
+
+    public T scrollLeftToStart(Selector selector) {
+        driver.scrollLeftToStart(selector);
 
         return _self;
     }

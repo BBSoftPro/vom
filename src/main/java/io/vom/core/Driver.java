@@ -60,6 +60,8 @@ public interface Driver extends Searchable {
 
     void scrollLeft();
 
+    void scrollLeft(Selector draggableselector);
+
     void scrollLeft(Duration duration, int length);
 
     void scrollLeft(Duration duration, int length, Selector scrollContainer);
@@ -87,6 +89,8 @@ public interface Driver extends Searchable {
     void scrollUpToStart();
 
     void scrollLeftToStart();
+
+    void scrollLeftToStart(Selector selector);
 
     void scrollRightToEnd();
 
