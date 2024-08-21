@@ -36,6 +36,11 @@ public class Context {
         return commonSelectors.get(name);
     }
 
+    public Selector getSelector(String name, Class<?> klass) {
+        Map<String, Selector> selector = SelectorUtils.load(this, klass);
+        return selector.get(name);
+    }
+
     public Driver getDriver() {
         return driver;
     }
