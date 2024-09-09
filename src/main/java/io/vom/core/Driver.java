@@ -38,6 +38,8 @@ public interface Driver extends Searchable {
 
     void scrollDownTo(Selector selector, Duration duration, int length, Selector scrollContainer);
 
+    void scrollDownTo(Selector selector, Selector scrollContainer);
+
     void scrollUp();
 
     void scrollUp(Duration duration, int length);

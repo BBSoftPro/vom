@@ -284,6 +284,11 @@ public class AppiumDriverImpl implements Driver {
         scrollTo(selector, () -> scrollDown(duration, length, scrollContainer));
     }
 
+    @Override
+    public void scrollDownTo(Selector selector, Selector scrollContainer) {
+        scrollDownTo(selector, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH, scrollContainer);
+    }
+
     private void scrollTo(String text, Runnable runnable) {
         var limit = 50;
         while (!isPresentText(text)) {
