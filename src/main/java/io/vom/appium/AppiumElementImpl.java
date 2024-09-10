@@ -10,6 +10,7 @@ import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.FileImageInputStream;
@@ -56,6 +57,15 @@ public class AppiumElementImpl implements Element {
     @Override
     public void click() {
         webElement.click();
+    }
+
+    @Override
+    public void longPress() {
+        Actions actions = new Actions(this.driver.getAppiumDriver());
+        actions.clickAndHold(webElement)
+                .pause(Duration.ofSeconds(2))  // Duration of the long press
+                .release()
+                .perform();
     }
 
     @Override
