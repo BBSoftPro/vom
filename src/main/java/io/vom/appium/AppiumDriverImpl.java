@@ -284,6 +284,11 @@ public class AppiumDriverImpl implements Driver {
         scrollTo(selector, () -> scrollDown(duration, length, scrollContainer));
     }
 
+    @Override
+    public void scrollDownTo(Selector selector, Selector scrollContainer) {
+        scrollDownTo(selector, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH, scrollContainer);
+    }
+
     private void scrollTo(String text, Runnable runnable) {
         var limit = 50;
         while (!isPresentText(text)) {
@@ -366,6 +371,11 @@ public class AppiumDriverImpl implements Driver {
     }
 
     @Override
+    public void scrollLeft(Selector draggableSelector) {
+        VomUtils.scroll(this, ScrollDirection.LEFT, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH, draggableSelector);
+    }
+
+    @Override
     public void scrollLeft(Duration duration, int length) {
         scrollLeft(duration, length, scrollContainer);
     }
@@ -436,6 +446,11 @@ public class AppiumDriverImpl implements Driver {
     }
 
     @Override
+    public void scrollLeftToStart(Selector draggableselector) {
+        scrollToEdge(() -> scrollLeft(draggableselector), draggableselector);
+    }
+
+    @Override
     public void scrollRightToEnd() {
         scrollToEdge(this::scrollRight);
     }
@@ -447,6 +462,18 @@ public class AppiumDriverImpl implements Driver {
                 screenshot = findElement(scrollContainer).takeScreenshot();
                 runnable.run();
             } while (!Arrays.equals(screenshot, findElement(scrollContainer).takeScreenshot()));
+        } catch (StaleElementReferenceException ignore) {
+            scrollToEdge(runnable);
+        }
+    }
+
+    private void scrollToEdge(Runnable runnable, Selector innerScrollContainer) {
+        byte[] screenshot;
+        try {
+            do {
+                screenshot = findElement(innerScrollContainer).takeScreenshot();
+                runnable.run();
+            } while (!Arrays.equals(screenshot, findElement(innerScrollContainer).takeScreenshot()));
         } catch (StaleElementReferenceException ignore) {
             scrollToEdge(runnable);
         }

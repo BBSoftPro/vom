@@ -29,6 +29,7 @@ public class ReflectionUtils {
         actionHandler.put(SetText.class, ReflectionUtils::invokeSetter);
         actionHandler.put(Clear.class, ReflectionUtils::invokeClearer);
         actionHandler.put(Click.class, ReflectionUtils::invokeClicker);
+        actionHandler.put(LongPress.class, ReflectionUtils::invokeLongPress);
         actionHandler.put(TakeScreenshot.class, ReflectionUtils::invokeScreenshot);
         actionHandler.put(GetAverageColor.class, ReflectionUtils::invokeGettingColor);
     }
@@ -153,6 +154,17 @@ public class ReflectionUtils {
         var view = (View<?>) self;
         Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
         view.findElement(selector).click();
+        Class<? extends View> returnClass = (Class<? extends View>) method.getReturnType();
+
+        return createPageObject(view.getContext(), returnClass);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes", "SuspiciousInvocationHandlerImplementation"})
+    private static Object invokeLongPress(Object self, Method method, Object[] objects) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        Allure.step(method.getName());
+        var view = (View<?>) self;
+        Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
+        view.findElement(selector).longPress();
         Class<? extends View> returnClass = (Class<? extends View>) method.getReturnType();
 
         return createPageObject(view.getContext(), returnClass);

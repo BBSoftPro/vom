@@ -2,6 +2,7 @@ package io.vom.appium;
 
 import io.vom.core.Driver;
 import io.vom.core.Element;
+import io.vom.core.View;
 import io.vom.exceptions.ElementNotFoundException;
 import io.vom.utils.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -9,6 +10,7 @@ import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.FileImageInputStream;
@@ -58,6 +60,25 @@ public class AppiumElementImpl implements Element {
     }
 
     @Override
+    public void longPress() {
+        Actions actions = new Actions(this.driver.getAppiumDriver());
+        actions.clickAndHold(webElement)
+                .pause(Duration.ofSeconds(2))  // Duration of the long press
+                .release()
+                .perform();
+    }
+
+    @Override
+    public <P extends View<P>> P click(Class<P> klass) {
+        webElement.click();
+        try {
+            return klass.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to create an instance of " + klass.getName(), e);
+        }
+    }
+
+    @Override
     public Size getSize() {
         var dim = webElement.getSize();
         return new Size(dim.getWidth(), dim.getHeight());
@@ -81,6 +102,11 @@ public class AppiumElementImpl implements Element {
     @Override
     public boolean isFocused() {
         return Boolean.parseBoolean(getAttribute("focused"));
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return webElement.isEnabled();
     }
 
     @Override

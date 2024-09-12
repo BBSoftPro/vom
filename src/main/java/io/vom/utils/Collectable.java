@@ -72,10 +72,10 @@ public interface Collectable<E extends ElementSupplier> {
         return l.stream().distinct().collect(Collectors.toList());
     }
 
-    default List<E> collect(int count) {
+    default List<E> collect(int scrollingCount) {
         var l = Lists.<E>newArrayList();
 
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < scrollingCount; i++) {
             List<E> mList = getViewList();
             if (!l.isEmpty()) {
                 VomUtils.scroll(mList.stream().map(ElementSupplier::getElement).collect(Collectors.toList())
