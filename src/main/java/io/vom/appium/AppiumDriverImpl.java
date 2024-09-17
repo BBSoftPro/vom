@@ -139,7 +139,8 @@ public class AppiumDriverImpl implements Driver {
 
     @Override
     public Element findNullableElement(Selector selector) {
-        return findNullableElement(selector, Duration.ZERO);
+        Duration waitUntil = Duration.ofSeconds(Integer.parseInt(Properties.getInstance().getProperty("explicitly_wait_time_in_seconds", "0")));
+        return findNullableElement(selector, waitUntil);
     }
 
     @Override
