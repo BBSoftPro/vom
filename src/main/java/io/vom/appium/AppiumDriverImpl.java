@@ -64,9 +64,8 @@ public class AppiumDriverImpl implements Driver {
 
     public AppiumDriverImpl() {
         var prop = Properties.getInstance();
-
+        String platform;
         try {
-            url = new URL(prop.getProperty("appium_url"));
             var reader = new FileReader(FileUtils.getFullPath(prop.getProperty("appium_caps_json_file")));
 
             Gson gson = new Gson();
@@ -74,7 +73,21 @@ public class AppiumDriverImpl implements Driver {
             }.getType();
             List<Map<String, Object>> listPlatforms = gson.fromJson(reader, type);
 
-            var platform = prop.getProperty("appium_platform");
+            var propertiesPlatform = prop.getProperty("appium_platform");
+            if (propertiesPlatform.equals("automate")) {
+                String os = System.getProperty("os.name");
+                if (os.equals("Windows 10") || os.equals("Windows 11") || os.equals("Linux")) {
+                    platform = "android";
+                } else if (os.equals("Mac OS X") || os.equals("macOS")) {
+                    platform = "ios";
+                } else {
+                    platform = propertiesPlatform;
+                }
+            } else {
+                platform = propertiesPlatform;
+            }
+
+            url = new URL(prop.getProperty(platform + "_appium_url"));
             Objects.requireNonNull(platform, "appium_platform is not prepared on the properties file");
             var map = listPlatforms
                     .stream()
