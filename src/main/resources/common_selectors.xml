@@ -28,8 +28,18 @@
     </platform>
     <platform name="ios">
         <selector>
+            <name>present_text</name>
+            <value>//*[@value='${text}']</value>
+            <type>xpath</type>
+        </selector>
+        <selector>
+            <name>not_empty_text</name>
+            <value>//XCUIElementTypeStaticText[string-length(@value) > 0]</value>
+            <type>xpath</type>
+        </selector>
+        <selector>
             <name>scroll_container</name>
-            <value>(//*[(@class='android.widget.ListView') or (@class='android.widget.ScrollView') or (@class='androidx.recyclerview.widget.RecyclerView')])[1]</value>
+            <value>(//*[@class='XCUIElementTypeScrollView'])[1]</value>
             <type>xpath</type>
         </selector>
         <selector>

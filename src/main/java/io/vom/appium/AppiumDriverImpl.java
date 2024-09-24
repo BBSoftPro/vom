@@ -185,6 +185,8 @@ public class AppiumDriverImpl implements Driver {
                 return AppiumBy.accessibilityId(value);
             case "class_name":
                 return AppiumBy.className(value);
+            case "name":
+                return AppiumBy.name(value);
             case "ios_predicate_string":
                 return AppiumBy.iOSNsPredicateString(value);
             case "ios_class_chain":
