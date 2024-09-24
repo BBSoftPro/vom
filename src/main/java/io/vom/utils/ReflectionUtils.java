@@ -25,6 +25,7 @@ public class ReflectionUtils {
 
     static {
         actionHandler.put(GetText.class, ReflectionUtils::invokeGetter);
+        actionHandler.put(GetNullableText.class, ReflectionUtils::invokeNullableGetter);
         actionHandler.put(GetTexts.class, ReflectionUtils::invokeGetters);
         actionHandler.put(SetText.class, ReflectionUtils::invokeSetter);
         actionHandler.put(Clear.class, ReflectionUtils::invokeClearer);
@@ -188,6 +189,18 @@ public class ReflectionUtils {
         if (method.getReturnType().isAssignableFrom(String.class)) {
             //noinspection SuspiciousInvocationHandlerImplementation
             return view.findElement(selector).getText();
+        } else {
+            throw new ClassCastException("Method: " + method.getName() + "'s return type must be String");
+        }
+    }
+
+    private static Object invokeNullableGetter(Object self, Method method, Object[] objects) {
+        var view = (View<?>) self;
+        Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
+        if (method.getReturnType().isAssignableFrom(String.class)) {
+            Element el = view.findNullableElement(selector);
+            //noinspection SuspiciousInvocationHandlerImplementation
+            return (el != null) ? el.getText() : null;
         } else {
             throw new ClassCastException("Method: " + method.getName() + "'s return type must be String");
         }

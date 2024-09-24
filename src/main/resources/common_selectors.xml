@@ -27,10 +27,25 @@
         </selector>
     </platform>
     <platform name="ios">
-    <selector>
-        <name>test</name>
-        <value>a</value>
-        <type>id</type>
-    </selector>
+        <selector>
+            <name>present_text</name>
+            <value>//*[@value='${text}']</value>
+            <type>xpath</type>
+        </selector>
+        <selector>
+            <name>not_empty_text</name>
+            <value>//XCUIElementTypeStaticText[string-length(@value) > 0]</value>
+            <type>xpath</type>
+        </selector>
+        <selector>
+            <name>scroll_container</name>
+            <value>(//*[@class='XCUIElementTypeScrollView'])[1]</value>
+            <type>xpath</type>
+        </selector>
+        <selector>
+            <name>test</name>
+            <value>a</value>
+            <type>id</type>
+        </selector>
     </platform>
 </repository>
