@@ -6,26 +6,46 @@ import io.vom.utils.Selector;
 import io.vom.utils.SelectorUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import java.util.Locale;
 import java.util.Map;
 
 public class Context {
 
     LoadSelectorListener loadSelectorListener;
+    Locale contextLocal;
+    String deviceAppearanceMode;
     protected Driver driver;
 
     private Map<String, Selector> commonSelectors;
 
-    public Context(Driver driver){
+    public Context(Driver driver) {
         this.driver = driver;
         this.driver.prepare(this);
     }
 
-    public void setSelectorListener(LoadSelectorListener loadSelectorListener){
+    public void setSelectorListener(LoadSelectorListener loadSelectorListener) {
         this.loadSelectorListener = loadSelectorListener;
     }
 
-    public LoadSelectorListener getSelectorListener(){
+    public LoadSelectorListener getSelectorListener() {
         return loadSelectorListener;
+    }
+
+
+    public void setContextLocal(Locale locale) {
+        this.contextLocal = locale;
+    }
+
+    public Locale getContextLocal() {
+        return contextLocal;
+    }
+
+    public String getDeviceAppearanceMode() {
+        return deviceAppearanceMode;
+    }
+
+    public void setDeviceAppearanceMode(String deviceAppearanceMode) {
+        this.deviceAppearanceMode = deviceAppearanceMode;
     }
 
     public Selector getCommonSelector(String name) {

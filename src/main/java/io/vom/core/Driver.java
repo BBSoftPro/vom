@@ -8,6 +8,9 @@ import java.time.Duration;
 import java.util.Locale;
 
 public interface Driver extends Searchable {
+
+    Context getContext();
+
     void prepare(Context context);
 
     String getPlatform();
@@ -109,8 +112,4 @@ public interface Driver extends Searchable {
     void close();
 
     Locale getLocale();
-
-    Object getCenterColor(Selector selector);
-
-    Object getCenterColor(Point point);
 }

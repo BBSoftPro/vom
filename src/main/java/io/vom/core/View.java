@@ -314,14 +314,6 @@ public class View<T extends View<T>> implements Searchable {
         return driver.takeScreenshot();
     }
 
-    public Object getCenterRGBColor(Selector selector) {
-        return driver.getCenterColor(selector);
-    }
-
-    public Object getCenterRGBColor(Point point) {
-        return driver.getCenterColor(point);
-    }
-
     public void close() {
         driver.close();
     }
