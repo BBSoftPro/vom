@@ -6,20 +6,20 @@ import io.vom.core.View;
 import io.vom.exceptions.ElementNotFoundException;
 import io.vom.utils.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.openqa.selenium.Dimension;
 import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.interactions.Actions;
 
 import javax.imageio.ImageIO;
-import javax.imageio.stream.FileImageInputStream;
 import java.awt.image.BufferedImage;
-import java.io.File;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+
+import static io.vom.utils.ReflectionUtils.createPageObject;
 
 public class AppiumElementImpl implements Element {
     private final AppiumDriverImpl driver;
@@ -72,7 +72,7 @@ public class AppiumElementImpl implements Element {
     public <P extends View<P>> P click(Class<P> klass) {
         webElement.click();
         try {
-            return klass.getDeclaredConstructor().newInstance();
+            return createPageObject(this.getDriver().getContext(), klass);
         } catch (Exception e) {
             throw new RuntimeException("Failed to create an instance of " + klass.getName(), e);
         }
@@ -139,56 +139,51 @@ public class AppiumElementImpl implements Element {
 
     @Override
     public BufferedImage getImage() {
-        File screenshot = ((TakesScreenshot) driver.getAppiumDriver()).getScreenshotAs(OutputType.FILE);
-        Dimension size = webElement.getSize();
-        org.openqa.selenium.Point point = webElement.getLocation();
-
-        FileImageInputStream inputStream = null;
         try {
-            inputStream = new FileImageInputStream(screenshot);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            byte[] screenshotBytes = webElement.getScreenshotAs(OutputType.BYTES);
+            return ImageIO.read(new ByteArrayInputStream(screenshotBytes));
+        } catch (Exception e) {
+            throw new ElementNotFoundException("can't take screenshot");
         }
-        BufferedImage fullScreenshot = null;
-        try {
-            fullScreenshot = ImageIO.read(inputStream);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        return fullScreenshot.getSubimage(
-                point.getX(),
-                point.getY(),
-                size.getWidth(),
-                size.getHeight()
-        );
     }
 
     @Override
     public Object getAverageColor() {
-        Size size = getSize();
-        Point point = getPoint();
+        var image = getImage();
 
-        int x = (point.getX() + 5);
-        int y = (point.getY() + 5);
+        int x = 0;
+        int y = 0;
 
         int times = 20;
-        int mWidth = (size.getWidth() / times);
-        int mHeight = (size.getHeight() / times);
-        int c = times - 1;
 
+        double w = ((double) image.getWidth() / times);
+        double h = ((double) image.getHeight() / times);
         List<Object> rgbColorsList = new ArrayList<>();
-        for (int i = 0; i < c; i++) {
-            x = x + mWidth;
-            y = y + mHeight;
-            rgbColorsList.add(getCenterRGBColor());
+        for (int i = 1; i < (times - 1); i++) {
+            x += (int) w;
+            for (int j = 1; j < (times - 1); j++) {
+                y += (int) h;
+                int clr = image.getRGB(x, y);
+                String rbgColor = getRBG(clr);
+                rgbColorsList.add(rbgColor);
+            }
+            y = 0;
         }
-
         return CollectionUtils.getAverageDuplicateUniqFromObjectList(rgbColorsList);
     }
 
     @Override
-    public Object getCenterRGBColor() {
-        return getDriver().getCenterColor(getCenterPoint());
+    public Object getCenterColor() {
+        String scrBase64 = webElement.getScreenshotAs(OutputType.BASE64);
+        BufferedImage image;
+        try {
+            byte[] byteArray = Base64.getDecoder().decode(scrBase64);
+            image = ImageIO.read(new ByteArrayInputStream(byteArray));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        int clr = image.getRGB((image.getWidth() / 2), image.getHeight() / 2);
+        return getRBG(clr);
     }
 
     @Override
@@ -235,5 +230,16 @@ public class AppiumElementImpl implements Element {
     @Override
     public List<Element> findElements(@NonNull Selector selector) {
         return AppiumDriverImpl.findElements(driver, webElement, selector);
+    }
+
+    static private String getRBG(int clr) {
+        int red = (clr & 0x00ff0000) >> 16;
+        int green = (clr & 0x0000ff00) >> 8;
+        int blue = clr & 0x000000ff;
+        return String.join(
+                ",",
+                String.valueOf(red),
+                String.valueOf(green),
+                String.valueOf(blue));
     }
 }

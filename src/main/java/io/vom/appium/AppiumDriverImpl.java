@@ -22,11 +22,7 @@ import org.openqa.selenium.interactions.PointerInput;
 import org.openqa.selenium.interactions.Sequence;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.time.Duration;
@@ -44,6 +40,12 @@ public class AppiumDriverImpl implements Driver {
     private Selector scrollContainer;
     public static URL url;
     public static DesiredCapabilities caps;
+
+
+    @Override
+    public Context getContext() {
+        return context;
+    }
 
     @Override
     public void prepare(Context context) {
@@ -152,7 +154,7 @@ public class AppiumDriverImpl implements Driver {
 
     @Override
     public Element findNullableElement(Selector selector) {
-        Duration waitUntil = Duration.ofSeconds(Integer.parseInt(Properties.getInstance().getProperty("explicitly_wait_time_in_seconds", "0")));
+        Duration waitUntil = Duration.ofSeconds(Integer.parseInt(Properties.getInstance().getProperty("nullable_explicitly_wait_time_in_seconds", "0")));
         return findNullableElement(selector, waitUntil);
     }
 
@@ -515,42 +517,6 @@ public class AppiumDriverImpl implements Driver {
     @Override
     public byte[] takeScreenshot() {
         return appiumDriver.getScreenshotAs(OutputType.BYTES);
-    }
-
-    @Override
-    public Object getCenterColor(Selector selector) {
-        Element element = findElement(selector);
-        Point point = element.getCenterPoint();
-        return getColor(point);
-    }
-
-    @Override
-    public Object getCenterColor(Point point) {
-        return getColor(point);
-    }
-
-    public Object getColor(Point point) {
-
-        int centerX = point.getX();
-        int centerY = point.getY();
-        File scrFile = getAppiumDriver().getScreenshotAs(OutputType.FILE);
-
-        BufferedImage image;
-        try {
-            image = ImageIO.read(scrFile);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        int clr = image.getRGB(centerX, centerY);
-        int red = (clr & 0x00ff0000) >> 16;
-        int green = (clr & 0x0000ff00) >> 8;
-        int blue = clr & 0x000000ff;
-
-        return String.join(
-                ",",
-                String.valueOf(red),
-                String.valueOf(green),
-                String.valueOf(blue));
     }
 
     @Override

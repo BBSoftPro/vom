@@ -39,7 +39,7 @@
         </selector>
         <selector>
             <name>scroll_container</name>
-            <value>(//*[@class='XCUIElementTypeScrollView'])[1]</value>
+            <value>(//*[@class='XCUIElementTypeScrollView'])[1] | (//*[@type='XCUIElementTypeScrollView'])[1]</value>
             <type>xpath</type>
         </selector>
         <selector>
