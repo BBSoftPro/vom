@@ -59,12 +59,15 @@ public class View<T extends View<T>> implements Searchable {
         return driver.isPresentText(text);
     }
 
+    public boolean isElement(Selector selector) {
+        return driver.findNullableElement(selector) != null;
+    }
+
     public <V extends View<V>> V click(Point point, Class<V> vClass) {
         click(point);
 
         return context.loadView(vClass);
     }
-
 
     public Context getContext() {
         return context;

@@ -2,7 +2,6 @@ package io.vom.appium;
 
 import io.vom.core.Driver;
 import io.vom.core.Element;
-import io.vom.core.View;
 import io.vom.exceptions.ElementNotFoundException;
 import io.vom.utils.*;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -18,8 +17,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-
-import static io.vom.utils.ReflectionUtils.createPageObject;
 
 public class AppiumElementImpl implements Element {
     private final AppiumDriverImpl driver;
@@ -66,16 +63,6 @@ public class AppiumElementImpl implements Element {
                 .pause(Duration.ofSeconds(2))  // Duration of the long press
                 .release()
                 .perform();
-    }
-
-    @Override
-    public <P extends View<P>> P click(Class<P> klass) {
-        webElement.click();
-        try {
-            return createPageObject(this.getDriver().getContext(), klass);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create an instance of " + klass.getName(), e);
-        }
     }
 
     @Override

@@ -20,8 +20,6 @@ public interface Element extends Searchable {
 
     void longPress();
 
-    <P extends View<P>> P click(Class<P> klass);
-
     Size getSize();
 
     Point getPoint();
