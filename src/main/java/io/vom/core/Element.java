@@ -20,6 +20,8 @@ public interface Element extends Searchable {
 
     void longPress();
 
+    void longPress(int sec);
+
     Size getSize();
 
     Point getPoint();

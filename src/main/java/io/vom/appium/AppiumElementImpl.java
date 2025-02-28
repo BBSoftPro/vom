@@ -66,6 +66,15 @@ public class AppiumElementImpl implements Element {
     }
 
     @Override
+    public void longPress(int sec) {
+        Actions actions = new Actions(this.driver.getAppiumDriver());
+        actions.clickAndHold(webElement)
+                .pause(Duration.ofSeconds(sec))  // Duration of the long press
+                .release()
+                .perform();
+    }
+
+    @Override
     public Size getSize() {
         var dim = webElement.getSize();
         return new Size(dim.getWidth(), dim.getHeight());
