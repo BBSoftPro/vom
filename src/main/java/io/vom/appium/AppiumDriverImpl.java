@@ -135,10 +135,21 @@ public class AppiumDriverImpl implements Driver {
     }
 
     public static List<Element> findElements(AppiumDriverImpl driver, SearchContext searchContext, Selector selector) {
-        return searchContext.findElements(bySelector(selector))
-                .stream()
-                .map((e) -> new AppiumElementImpl(driver, e))
-                .collect(Collectors.toList());
+        Duration waitUntil = Duration.ofSeconds(Integer.parseInt(Properties.getInstance().getProperty("explicitly_wait_time_in_seconds", "0")));
+        return findElements(driver, searchContext, selector, waitUntil);
+    }
+
+    public static List<Element> findElements(AppiumDriverImpl driver, SearchContext searchContext, Selector selector, Duration waitUntil) {
+        return DriverUtil.waitListUntil(waitUntil, () -> {
+            try {
+                List<WebElement> found = searchContext.findElements(bySelector(selector));
+                return found.stream()
+                        .map(e -> new AppiumElementImpl(driver, e))
+                        .collect(Collectors.toList());
+            } catch (NoSuchElementException e) {
+                return List.of(); // თუ არ იპოვნა არაფერი, ცარიელი სია
+            }
+        });
     }
 
     @Override
