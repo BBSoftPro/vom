@@ -12,7 +12,7 @@
         </selector>
         <selector>
             <name>scroll_container</name>
-            <value>(//*[(@class='android.widget.ListView') or (@class='android.widget.ScrollView') or (@class='androidx.recyclerview.widget.RecyclerView')])[1]</value>
+            <value>(//*[((@class='android.widget.ListView') or (@resource-id='scrollContainer')or (@class='android.widget.ScrollView') or (@class='androidx.recyclerview.widget.RecyclerView')) and ./*])[1]</value>
             <type>xpath</type>
         </selector>
         <selector>
