@@ -228,6 +228,11 @@ public class AppiumElementImpl implements Element {
         return AppiumDriverImpl.findElements(driver, webElement, selector);
     }
 
+    @Override
+    public List<Element> findElements(@NonNull Selector selector, Duration duration) {
+        return AppiumDriverImpl.findElements(driver, webElement, selector, duration);
+    }
+
     static private String getRBG(int clr) {
         int red = (clr & 0x00ff0000) >> 16;
         int green = (clr & 0x0000ff00) >> 8;
