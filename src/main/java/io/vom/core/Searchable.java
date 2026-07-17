@@ -17,4 +17,6 @@ public interface Searchable {
 
     List<Element> findElements(Selector selector);
 
+    List<Element> findElements(Selector selector, Duration duration);
+
 }

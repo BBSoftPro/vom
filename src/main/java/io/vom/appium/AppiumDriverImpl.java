@@ -183,6 +183,11 @@ public class AppiumDriverImpl implements Driver {
         return findElements(this, appiumDriver, selector);
     }
 
+    @Override
+    public List<Element> findElements(Selector selector, Duration duration) {
+        return findElements(this, appiumDriver, selector, duration);
+    }
+
     static By bySelector(Selector selector) {
         Objects.requireNonNull(selector, "Selector must not be null");
         String value = selector.getValue();
@@ -219,7 +224,6 @@ public class AppiumDriverImpl implements Driver {
 
     @Override
     public void slipFinger(Point from, Point to, Duration duration) {
-
         PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
         Sequence sequence = new Sequence(finger, 1);
 
@@ -228,13 +232,18 @@ public class AppiumDriverImpl implements Driver {
 
         sequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
 
+        sequence.addAction(finger.createPointerMove(Duration.ofMillis(100),
+                PointerInput.Origin.viewport(), from.getX(), from.getY()));
+
         sequence.addAction(finger.createPointerMove(duration,
                 PointerInput.Origin.viewport(), to.getX(), to.getY()));
 
+        sequence.addAction(finger.createPointerMove(Duration.ofMillis(300),
+                PointerInput.Origin.viewport(), to.getX(), to.getY()));
+
         sequence.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+
         appiumDriver.perform(List.of(sequence));
-
-
     }
 
     @Override

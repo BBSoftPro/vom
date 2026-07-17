@@ -98,6 +98,11 @@ public class View<T extends View<T>> implements Searchable {
         return context.getDriver().findElements(selector);
     }
 
+    @Override
+    public List<Element> findElements(Selector selector, Duration duration) {
+        return context.getDriver().findElements(selector, duration);
+    }
+
     public T scrollDown() {
         driver.scrollDown();
         return _self;

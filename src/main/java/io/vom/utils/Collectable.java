@@ -61,8 +61,8 @@ public interface Collectable<E extends ElementSupplier> {
                     , getScrollLength());
             l.addAll(before);
             after = getViewList();
-
-            if (before.equals(after)) {
+            var a = before.equals(after);
+            if (before.equals(after) || after.isEmpty()) {
                 break;
             } else {
                 before = after;
