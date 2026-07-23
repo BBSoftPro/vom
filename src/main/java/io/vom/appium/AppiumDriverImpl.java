@@ -1,7 +1,5 @@
 package io.vom.appium;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import io.appium.java_client.AppiumBy;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
@@ -11,7 +9,6 @@ import io.vom.core.Driver;
 import io.vom.core.Element;
 import io.vom.exceptions.ElementNotFoundException;
 import io.vom.exceptions.InfinityLoopException;
-import io.vom.exceptions.PlatformNotFoundException;
 import io.vom.utils.Point;
 import io.vom.utils.Properties;
 import io.vom.utils.*;
@@ -20,10 +17,7 @@ import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.PointerInput;
 import org.openqa.selenium.interactions.Sequence;
-import org.openqa.selenium.remote.DesiredCapabilities;
 
-import java.io.FileReader;
-import java.lang.reflect.Type;
 import java.net.URL;
 import java.time.Duration;
 import java.util.*;
@@ -32,15 +26,13 @@ import java.util.stream.Collectors;
 import static io.vom.utils.Properties.DEFAULT_SCROLL_DURATION;
 import static io.vom.utils.Properties.DEFAULT_SCROLL_LENGTH;
 
-
 public class AppiumDriverImpl implements Driver {
 
-    AppiumDriver appiumDriver;
+    private AppiumDriver appiumDriver;
     private Context context;
     private Selector scrollContainer;
-    public static URL url;
-    public static DesiredCapabilities caps;
-
+    private URL url;
+    private Capabilities caps;
 
     @Override
     public Context getContext() {
@@ -50,14 +42,13 @@ public class AppiumDriverImpl implements Driver {
     @Override
     public void prepare(Context context) {
         this.context = context;
-
-        scrollContainer = Objects.requireNonNull(context.getCommonSelector("scroll_container")
-                , "scroll container selector was not found in neither resource folder nor repository");
-
+        scrollContainer = Objects.requireNonNull(context.getCommonSelector("scroll_container"),
+                "scroll container selector was not found in neither resource folder nor repository");
     }
 
     public AppiumDriverImpl(URL remoteAddress, Capabilities desiredCapabilities) {
         appiumDriver = new AppiumDriver(remoteAddress, desiredCapabilities);
+        initDeviceId();
     }
 
     public AppiumDriver getAppiumDriver() {
@@ -68,15 +59,8 @@ public class AppiumDriverImpl implements Driver {
         var prop = Properties.getInstance();
         String platform;
         try {
-            var reader = new FileReader(FileUtils.getFullPath(prop.getProperty("appium_caps_json_file")));
-
-            Gson gson = new Gson();
-            Type type = new TypeToken<List<Map<String, Object>>>() {
-            }.getType();
-            List<Map<String, Object>> listPlatforms = gson.fromJson(reader, type);
-
             var propertiesPlatform = prop.getProperty("appium_platform");
-            if (propertiesPlatform.equals("automate")) {
+            if ("automate".equals(propertiesPlatform)) {
                 String os = System.getProperty("os.name");
                 if (os.equals("Windows 10") || os.equals("Windows 11") || os.equals("Linux")) {
                     platform = "android";
@@ -89,29 +73,34 @@ public class AppiumDriverImpl implements Driver {
                 platform = propertiesPlatform;
             }
 
-            url = new URL(prop.getProperty(platform + "_appium_url"));
             Objects.requireNonNull(platform, "appium_platform is not prepared on the properties file");
-            var map = listPlatforms
-                    .stream()
-                    .filter((list) -> platform.equalsIgnoreCase((String) list.get("platformName")))
-                    .findAny()
-                    .orElseThrow(() -> new PlatformNotFoundException("Platform: '" + platform + "' was not found on appium json file"));
 
-            caps = new DesiredCapabilities(map);
-
-            if (platform.equals("android")) {
-                appiumDriver = new AndroidDriver(url, caps);
-            } else if (platform.equals("ios")) {
-                appiumDriver = new IOSDriver(url, caps);
+            String systemPort = PortManager.getPort();
+            if (systemPort != null && !systemPort.isEmpty()) {
+                this.url = new URL("http://127.0.0.1:" + systemPort + "/");
             } else {
-                appiumDriver = new AppiumDriver(url, caps);
+                this.url = new URL(prop.getProperty(platform + "_appium_url"));
             }
+
+            this.caps = CapabilitiesFactory.createCapabilities(platform);
+
+            if ("android".equalsIgnoreCase(platform)) {
+                appiumDriver = new AndroidDriver(this.url, this.caps);
+            } else if ("ios".equalsIgnoreCase(platform)) {
+                appiumDriver = new IOSDriver(this.url, this.caps);
+            } else {
+                appiumDriver = new AppiumDriver(this.url, this.caps);
+            }
+
+            initDeviceId();
+
             Duration implicitlyDuration = Duration.ofSeconds(Long.parseLong(prop.getProperty("implicitly_wait_time_in_seconds", "0")));
             appiumDriver.manage().timeouts().implicitlyWait(implicitlyDuration);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
 
     public static Element findElement(AppiumDriverImpl driver, SearchContext searchContext, Selector selector) {
         Duration waitUntil = Duration.ofSeconds(Integer.parseInt(Properties.getInstance().getProperty("explicitly_wait_time_in_seconds", "0")));
@@ -122,13 +111,11 @@ public class AppiumDriverImpl implements Driver {
         return DriverUtil.waitUntil(waitUntil, () -> {
             try {
                 var ae = searchContext.findElement(bySelector(selector));
-
                 return new AppiumElementImpl(driver, ae);
             } catch (NoSuchElementException e) {
                 var exception = new ElementNotFoundException("Element was not found by this selector:" +
                         " name='" + selector.getName() + "' type='" + selector.getType() + "' value='" + selector.getValue() + "'");
                 exception.addSuppressed(e);
-
                 throw exception;
             }
         });
@@ -147,7 +134,7 @@ public class AppiumDriverImpl implements Driver {
                         .map(e -> new AppiumElementImpl(driver, e))
                         .collect(Collectors.toList());
             } catch (NoSuchElementException e) {
-                return List.of(); // თუ არ იპოვნა არაფერი, ცარიელი სია
+                return List.of();
             }
         });
     }
@@ -156,7 +143,6 @@ public class AppiumDriverImpl implements Driver {
     public Element findElement(Selector selector) {
         return findElement(this, appiumDriver, selector);
     }
-
 
     @Override
     public Element findElement(Selector selector, Duration waitUntil) {
@@ -191,7 +177,6 @@ public class AppiumDriverImpl implements Driver {
     static By bySelector(Selector selector) {
         Objects.requireNonNull(selector, "Selector must not be null");
         String value = selector.getValue();
-
         switch (selector.getType().toLowerCase()) {
             case "xpath":
                 return AppiumBy.xpath(value);
@@ -216,40 +201,25 @@ public class AppiumDriverImpl implements Driver {
 
     @Override
     public String getPlatform() {
-        return appiumDriver.getCapabilities()
-                .getCapability("platformName")
-                .toString()
-                .toLowerCase();
+        return appiumDriver.getCapabilities().getCapability("platformName").toString().toLowerCase();
     }
 
     @Override
     public void slipFinger(Point from, Point to, Duration duration) {
         PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
         Sequence sequence = new Sequence(finger, 1);
-
-        sequence.addAction(finger.createPointerMove(Duration.ofMillis(0),
-                PointerInput.Origin.viewport(), from.getX(), from.getY()));
-
+        sequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), from.getX(), from.getY()));
         sequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
-
-        sequence.addAction(finger.createPointerMove(Duration.ofMillis(100),
-                PointerInput.Origin.viewport(), from.getX(), from.getY()));
-
-        sequence.addAction(finger.createPointerMove(duration,
-                PointerInput.Origin.viewport(), to.getX(), to.getY()));
-
-        sequence.addAction(finger.createPointerMove(Duration.ofMillis(300),
-                PointerInput.Origin.viewport(), to.getX(), to.getY()));
-
+        sequence.addAction(finger.createPointerMove(Duration.ofMillis(100), PointerInput.Origin.viewport(), from.getX(), from.getY()));
+        sequence.addAction(finger.createPointerMove(duration, PointerInput.Origin.viewport(), to.getX(), to.getY()));
+        sequence.addAction(finger.createPointerMove(Duration.ofMillis(300), PointerInput.Origin.viewport(), to.getX(), to.getY()));
         sequence.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-
         appiumDriver.perform(List.of(sequence));
     }
 
     @Override
     public Size getWindowSize() {
         var dim = appiumDriver.manage().window().getSize();
-
         return new Size(dim.getWidth(), dim.getHeight());
     }
 
@@ -257,22 +227,16 @@ public class AppiumDriverImpl implements Driver {
     public void removeFocus() {
         var element = findElement(Selector.from("xpath", "//*[@focused='true']"));
         if (element == null) return;
-
         element.removeFocus();
     }
 
     @Override
     public void click(int x, int y) {
         PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
-
         Sequence sequence = new Sequence(finger, 1);
-
-        sequence.addAction(finger.createPointerMove(Duration.ofMillis(0),
-                PointerInput.Origin.viewport(), x, y));
-
+        sequence.addAction(finger.createPointerMove(Duration.ofMillis(0), PointerInput.Origin.viewport(), x, y));
         sequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
         sequence.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
-
         appiumDriver.perform(List.of(sequence));
     }
 
@@ -285,7 +249,6 @@ public class AppiumDriverImpl implements Driver {
     public void scrollDown(Duration duration, int length) {
         scrollDown(duration, length, scrollContainer);
     }
-
 
     @Override
     public void scrollDown(Duration duration, int length, Selector scrollContainer) {
@@ -330,26 +293,18 @@ public class AppiumDriverImpl implements Driver {
     private void scrollTo(String text, Runnable runnable) {
         var limit = 50;
         while (!isPresentText(text)) {
-
             runnable.run();
-
             limit--;
-            if (limit == 0) {
-                throw new InfinityLoopException("infinite scrolling, max scroll limit is 50");
-            }
+            if (limit == 0) throw new InfinityLoopException("infinite scrolling, max scroll limit is 50");
         }
     }
 
     private void scrollTo(Selector selector, Runnable runnable) {
         var limit = 50;
         while (findNullableElement(selector) == null) {
-
             runnable.run();
-
             limit--;
-            if (limit == 0) {
-                throw new InfinityLoopException("infinite scrolling, max scroll limit is 50");
-            }
+            if (limit == 0) throw new InfinityLoopException("infinite scrolling, max scroll limit is 50");
         }
     }
 
@@ -513,15 +468,14 @@ public class AppiumDriverImpl implements Driver {
                 runnable.run();
             } while (!Arrays.equals(screenshot, findElement(innerScrollContainer).takeScreenshot()));
         } catch (StaleElementReferenceException ignore) {
-            scrollToEdge(runnable);
+            scrollToEdge(runnable, innerScrollContainer);
         }
     }
 
     @Override
     public boolean isPresentText(String text) {
-        Selector selector = Objects.requireNonNull(context.getCommonSelector("present_text")
-                , "present text selector ('present_text') was not found in neither resource folder nor repository");
-
+        Selector selector = Objects.requireNonNull(context.getCommonSelector("present_text"),
+                "present text selector ('present_text') was not found in neither resource folder nor repository");
         HashMap<String, String> map = new HashMap<>();
         map.put("text", text);
         var fixed = StrSubstitutor.replace(selector.getValue(), map);
@@ -554,18 +508,35 @@ public class AppiumDriverImpl implements Driver {
         appiumDriver.close();
     }
 
+    private void initDeviceId() {
+        if (appiumDriver == null) return;
+
+        Capabilities actualCaps = appiumDriver.getCapabilities();
+
+        String deviceId = (String) actualCaps.getCapability("udid");
+        if (deviceId == null) deviceId = (String) actualCaps.getCapability("appium:deviceName");
+        if (deviceId == null) deviceId = (String) actualCaps.getCapability("deviceName");
+
+        if (deviceId != null) {
+            DeviceManager.setDeviceId(deviceId);
+        }
+    }
+
     @Override
     public Locale getLocale() {
         Selector texts = context.getCommonSelector("not_empty_text");
-        try {
-            var l = findElements(texts)
-                    .stream()
-                    .map(Element::getText)
-                    .collect(Collectors.toList());
+        int maxRetries = 3;
 
-            return VomUtils.getLocale(l);
-        } catch (StaleElementReferenceException ignore) {
-            return getLocale();
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                var l = findElements(texts).stream()
+                        .map(Element::getText)
+                        .collect(Collectors.toList());
+                return VomUtils.getLocale(l);
+            } catch (StaleElementReferenceException ignore) {
+                return getLocale();
+            }
         }
+        throw new RuntimeException("Could not determine locale due to persistent StaleElementReferenceException");
     }
 }
