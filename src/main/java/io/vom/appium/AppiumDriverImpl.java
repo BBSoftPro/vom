@@ -22,11 +22,7 @@ import org.openqa.selenium.interactions.PointerInput;
 import org.openqa.selenium.interactions.Sequence;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URL;
 import java.time.Duration;
@@ -44,6 +40,12 @@ public class AppiumDriverImpl implements Driver {
     private Selector scrollContainer;
     public static URL url;
     public static DesiredCapabilities caps;
+
+
+    @Override
+    public Context getContext() {
+        return context;
+    }
 
     @Override
     public void prepare(Context context) {
@@ -64,9 +66,8 @@ public class AppiumDriverImpl implements Driver {
 
     public AppiumDriverImpl() {
         var prop = Properties.getInstance();
-
+        String platform;
         try {
-            url = new URL(prop.getProperty("appium_url"));
             var reader = new FileReader(FileUtils.getFullPath(prop.getProperty("appium_caps_json_file")));
 
             Gson gson = new Gson();
@@ -74,7 +75,21 @@ public class AppiumDriverImpl implements Driver {
             }.getType();
             List<Map<String, Object>> listPlatforms = gson.fromJson(reader, type);
 
-            var platform = prop.getProperty("appium_platform");
+            var propertiesPlatform = prop.getProperty("appium_platform");
+            if (propertiesPlatform.equals("automate")) {
+                String os = System.getProperty("os.name");
+                if (os.equals("Windows 10") || os.equals("Windows 11") || os.equals("Linux")) {
+                    platform = "android";
+                } else if (os.equals("Mac OS X") || os.equals("macOS")) {
+                    platform = "ios";
+                } else {
+                    platform = propertiesPlatform;
+                }
+            } else {
+                platform = propertiesPlatform;
+            }
+
+            url = new URL(prop.getProperty(platform + "_appium_url"));
             Objects.requireNonNull(platform, "appium_platform is not prepared on the properties file");
             var map = listPlatforms
                     .stream()
@@ -120,10 +135,21 @@ public class AppiumDriverImpl implements Driver {
     }
 
     public static List<Element> findElements(AppiumDriverImpl driver, SearchContext searchContext, Selector selector) {
-        return searchContext.findElements(bySelector(selector))
-                .stream()
-                .map((e) -> new AppiumElementImpl(driver, e))
-                .collect(Collectors.toList());
+        Duration waitUntil = Duration.ofSeconds(Integer.parseInt(Properties.getInstance().getProperty("explicitly_wait_time_in_seconds", "0")));
+        return findElements(driver, searchContext, selector, waitUntil);
+    }
+
+    public static List<Element> findElements(AppiumDriverImpl driver, SearchContext searchContext, Selector selector, Duration waitUntil) {
+        return DriverUtil.waitListUntil(waitUntil, () -> {
+            try {
+                List<WebElement> found = searchContext.findElements(bySelector(selector));
+                return found.stream()
+                        .map(e -> new AppiumElementImpl(driver, e))
+                        .collect(Collectors.toList());
+            } catch (NoSuchElementException e) {
+                return List.of(); // თუ არ იპოვნა არაფერი, ცარიელი სია
+            }
+        });
     }
 
     @Override
@@ -139,7 +165,8 @@ public class AppiumDriverImpl implements Driver {
 
     @Override
     public Element findNullableElement(Selector selector) {
-        return findNullableElement(selector, Duration.ZERO);
+        Duration waitUntil = Duration.ofSeconds(Integer.parseInt(Properties.getInstance().getProperty("nullable_explicitly_wait_time_in_seconds", "0")));
+        return findNullableElement(selector, waitUntil);
     }
 
     @Override
@@ -154,6 +181,11 @@ public class AppiumDriverImpl implements Driver {
     @Override
     public List<Element> findElements(Selector selector) {
         return findElements(this, appiumDriver, selector);
+    }
+
+    @Override
+    public List<Element> findElements(Selector selector, Duration duration) {
+        return findElements(this, appiumDriver, selector, duration);
     }
 
     static By bySelector(Selector selector) {
@@ -171,6 +203,8 @@ public class AppiumDriverImpl implements Driver {
                 return AppiumBy.accessibilityId(value);
             case "class_name":
                 return AppiumBy.className(value);
+            case "name":
+                return AppiumBy.name(value);
             case "ios_predicate_string":
                 return AppiumBy.iOSNsPredicateString(value);
             case "ios_class_chain":
@@ -190,7 +224,6 @@ public class AppiumDriverImpl implements Driver {
 
     @Override
     public void slipFinger(Point from, Point to, Duration duration) {
-
         PointerInput finger = new PointerInput(PointerInput.Kind.TOUCH, "finger");
         Sequence sequence = new Sequence(finger, 1);
 
@@ -199,13 +232,18 @@ public class AppiumDriverImpl implements Driver {
 
         sequence.addAction(finger.createPointerDown(PointerInput.MouseButton.LEFT.asArg()));
 
+        sequence.addAction(finger.createPointerMove(Duration.ofMillis(100),
+                PointerInput.Origin.viewport(), from.getX(), from.getY()));
+
         sequence.addAction(finger.createPointerMove(duration,
                 PointerInput.Origin.viewport(), to.getX(), to.getY()));
 
+        sequence.addAction(finger.createPointerMove(Duration.ofMillis(300),
+                PointerInput.Origin.viewport(), to.getX(), to.getY()));
+
         sequence.addAction(finger.createPointerUp(PointerInput.MouseButton.LEFT.asArg()));
+
         appiumDriver.perform(List.of(sequence));
-
-
     }
 
     @Override
@@ -282,6 +320,11 @@ public class AppiumDriverImpl implements Driver {
     @Override
     public void scrollDownTo(Selector selector, Duration duration, int length, Selector scrollContainer) {
         scrollTo(selector, () -> scrollDown(duration, length, scrollContainer));
+    }
+
+    @Override
+    public void scrollDownTo(Selector selector, Selector scrollContainer) {
+        scrollDownTo(selector, DEFAULT_SCROLL_DURATION, DEFAULT_SCROLL_LENGTH, scrollContainer);
     }
 
     private void scrollTo(String text, Runnable runnable) {
@@ -494,42 +537,6 @@ public class AppiumDriverImpl implements Driver {
     @Override
     public byte[] takeScreenshot() {
         return appiumDriver.getScreenshotAs(OutputType.BYTES);
-    }
-
-    @Override
-    public Object getCenterColor(Selector selector) {
-        Element element = findElement(selector);
-        Point point = element.getCenterPoint();
-        return getColor(point);
-    }
-
-    @Override
-    public Object getCenterColor(Point point) {
-        return getColor(point);
-    }
-
-    public Object getColor(Point point) {
-
-        int centerX = point.getX();
-        int centerY = point.getY();
-        File scrFile = getAppiumDriver().getScreenshotAs(OutputType.FILE);
-
-        BufferedImage image;
-        try {
-            image = ImageIO.read(scrFile);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        int clr = image.getRGB(centerX, centerY);
-        int red = (clr & 0x00ff0000) >> 16;
-        int green = (clr & 0x0000ff00) >> 8;
-        int blue = clr & 0x000000ff;
-
-        return String.join(
-                ",",
-                String.valueOf(red),
-                String.valueOf(green),
-                String.valueOf(blue));
     }
 
     @Override

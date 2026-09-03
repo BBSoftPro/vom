@@ -25,10 +25,12 @@ public class ReflectionUtils {
 
     static {
         actionHandler.put(GetText.class, ReflectionUtils::invokeGetter);
+        actionHandler.put(GetNullableText.class, ReflectionUtils::invokeNullableGetter);
         actionHandler.put(GetTexts.class, ReflectionUtils::invokeGetters);
         actionHandler.put(SetText.class, ReflectionUtils::invokeSetter);
         actionHandler.put(Clear.class, ReflectionUtils::invokeClearer);
         actionHandler.put(Click.class, ReflectionUtils::invokeClicker);
+        actionHandler.put(LongPress.class, ReflectionUtils::invokeLongPress);
         actionHandler.put(TakeScreenshot.class, ReflectionUtils::invokeScreenshot);
         actionHandler.put(GetAverageColor.class, ReflectionUtils::invokeGettingColor);
     }
@@ -158,6 +160,17 @@ public class ReflectionUtils {
         return createPageObject(view.getContext(), returnClass);
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes", "SuspiciousInvocationHandlerImplementation"})
+    private static Object invokeLongPress(Object self, Method method, Object[] objects) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        Allure.step(method.getName());
+        var view = (View<?>) self;
+        Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
+        view.findElement(selector).longPress();
+        Class<? extends View> returnClass = (Class<? extends View>) method.getReturnType();
+
+        return createPageObject(view.getContext(), returnClass);
+    }
+
     private static byte[] invokeScreenshot(Object self, Method method, Object[] objects) {
         var view = (View<?>) self;
         Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
@@ -176,6 +189,18 @@ public class ReflectionUtils {
         if (method.getReturnType().isAssignableFrom(String.class)) {
             //noinspection SuspiciousInvocationHandlerImplementation
             return view.findElement(selector).getText();
+        } else {
+            throw new ClassCastException("Method: " + method.getName() + "'s return type must be String");
+        }
+    }
+
+    private static Object invokeNullableGetter(Object self, Method method, Object[] objects) {
+        var view = (View<?>) self;
+        Selector selector = SelectorUtils.findSelector(view.getContext(), view, method);
+        if (method.getReturnType().isAssignableFrom(String.class)) {
+            Element el = view.findNullableElement(selector);
+            //noinspection SuspiciousInvocationHandlerImplementation
+            return (el != null) ? el.getText() : null;
         } else {
             throw new ClassCastException("Method: " + method.getName() + "'s return type must be String");
         }

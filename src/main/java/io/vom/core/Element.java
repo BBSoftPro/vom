@@ -18,7 +18,9 @@ public interface Element extends Searchable {
 
     void click();
 
-    <P extends View<P>> P click(Class<P> klass);
+    void longPress();
+
+    void longPress(int sec);
 
     Size getSize();
 
@@ -40,7 +42,7 @@ public interface Element extends Searchable {
 
     byte[] takeScreenshot();
 
-    Object getCenterRGBColor();
+    Object getCenterColor();
 
     Object getAverageColor();
 
