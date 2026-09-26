@@ -36,7 +36,7 @@ public class AppiumElementImpl implements Element {
     public void setText(String text) {
         click();
         webElement.sendKeys(text);
-        removeFocus();
+//        removeFocus();
     }
 
     @Override
