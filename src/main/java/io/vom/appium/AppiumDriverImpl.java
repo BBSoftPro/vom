@@ -47,8 +47,13 @@ public class AppiumDriverImpl implements Driver {
     }
 
     public AppiumDriverImpl(URL remoteAddress, Capabilities desiredCapabilities) {
-        appiumDriver = new AppiumDriver(remoteAddress, desiredCapabilities);
-        initDeviceId();
+        try {
+            appiumDriver = new AppiumDriver(remoteAddress, desiredCapabilities);
+            initDeviceId();
+        } catch (RuntimeException | Error failure) {
+            quitOnInitializationFailure(failure);
+            throw failure;
+        }
     }
 
     public AppiumDriver getAppiumDriver() {
@@ -97,7 +102,23 @@ public class AppiumDriverImpl implements Driver {
             Duration implicitlyDuration = Duration.ofSeconds(Long.parseLong(prop.getProperty("implicitly_wait_time_in_seconds", "0")));
             appiumDriver.manage().timeouts().implicitlyWait(implicitlyDuration);
         } catch (Exception e) {
+            quitOnInitializationFailure(e);
             throw new RuntimeException(e);
+        } catch (Error e) {
+            quitOnInitializationFailure(e);
+            throw e;
+        }
+    }
+
+    private void quitOnInitializationFailure(Throwable failure) {
+        if (appiumDriver == null) {
+            return;
+        }
+
+        try {
+            appiumDriver.quit();
+        } catch (Throwable cleanupFailure) {
+            failure.addSuppressed(cleanupFailure);
         }
     }
 
