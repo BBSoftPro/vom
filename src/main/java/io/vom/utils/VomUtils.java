@@ -39,6 +39,17 @@ public class VomUtils {
 //        System.out.println(centerPoint);
         var d = createScrollDirection(centerPoint, element.getSize(), length, direction);
 
+        if (ScrollDirection.DOWN == direction
+                && "ios".equalsIgnoreCase(driver.getPlatform())) {
+            int maxStartY = driver.getWindowSize().getHeight() - 50;
+            int offset = Math.max(
+                    0,
+                    d.getStartPoint().getY() - maxStartY
+            );
+            d.getStartPoint().move(0, -offset);
+            d.getEndPoint().move(0, -offset);
+        }
+
         driver.slipFinger(d.getStartPoint(), d.getEndPoint(), duration);
 
         try {

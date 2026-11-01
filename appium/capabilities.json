@@ -1,13 +1,19 @@
-[
-  {
-    "platformName": "Android",
-    "appActivity": "MainActivity",
-    "appPackage": "io.vom"
-  },
-  {
-    "platformName": "iOS",
-    "platformVersion": "11.0",
-    "deviceName": "iPhone 7",
-    "automationName": "XCUITest"
-  }
-]
+{
+  "android": [
+    {
+      "platformName": "Android",
+      "appium:automationName": "UiAutomator2",
+      "appium:appPackage": "com.example.myapp",
+      "appium:appActivity": "com.example.myapp.MainActivity",
+      "appium:newCommandTimeout": 3600
+    }
+  ],
+  "ios": [
+    {
+      "platformName": "iOS",
+      "appium:automationName": "XCUITest",
+      "appium:bundleId": "com.example.myapp",
+      "appium:newCommandTimeout": 3600
+    }
+  ]
+}
